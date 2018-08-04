@@ -30,3 +30,21 @@ for perm in itertools.permutations(array):
         total_solutions += 1
 
 print "total_solutions {}".format(total_solutions) 
+
+
+#     |   | 8 | 6 |   |
+#     | 5 | 1 | 4 | 2 |
+#     |   | 3 | 7 |   |
+#     
+# 
+#     |   | 8 | 6 |   |
+#     | 7 | 4 | 1 | 3 |
+#     |   | 2 | 5 |   |
+#     
+# 
+#     |   | 8 | 6 |   |
+#     | 7 | 5 | 1 | 3 |
+#     |   | 2 | 4 |   |
+#     
+# total_solutions 1656
+
