@@ -122,10 +122,15 @@ class WorkoutApp(tk.Tk):
         """Uses native macOS speech engine ('say') to audibly announce workout changes."""
         exercise = self.engine.get_current_exercise()
         exercise_name = exercise.get("activity", "Exercise") if exercise else ""
+        repetation = exercise.get("repetition per set", 1) if exercise else 0
         text_to_speak = ""
 
         if event_type == "START_WORK":
-            text_to_speak = f"Starting workout. Next exercise is {exercise_name}."
+            if repetation > 1:
+                text_to_speak = f"Do {repetation} {exercise_name} "
+            else:
+                text_to_speak = f"Do {exercise_name} "
+            
         elif event_type == "START_ROUND":
             text_to_speak = f"Round {self.engine.current_round}. Begin {exercise_name}."
         elif event_type == "START_REST":
@@ -153,6 +158,14 @@ class WorkoutApp(tk.Tk):
                         "rest duration per set": 5, 
                         "rounds": 3,
                         "demo gif": "https://giphy.com"
+                    },
+                    {
+                        "activity": "pullups", 
+                        "repetition per set": 15,
+                        "work duration per set": 10, 
+                        "rest duration per set": 5, 
+                        "rounds": 3,
+                        "demo gif": "https://giphy.com"
                     }
                 ]
             }
@@ -172,8 +185,6 @@ class WorkoutApp(tk.Tk):
         for workout in self.workout_data["workout plan"]:
             previous_workout.update(workout)
             workout.update(previous_workout)
-        print(self.workout_data)
-
 
 
     def setup_styles(self):
@@ -330,7 +341,11 @@ class WorkoutApp(tk.Tk):
         if exercise:
             self.lbl_exercise.configure(text=exercise.get("activity", "Unknown"))
             reps = exercise.get("repetition per set", "--")
-            self.lbl_reps.configure(text=f"Reps per set: {reps}")
+            if reps > 2:
+                self.lbl_reps.configure(text=f"Reps per set: {reps}")
+            else:
+                self.lbl_reps.configure(text="Reps per set: --")
+
             self.lbl_round.configure(text=f"Round: {self.engine.current_round} / {exercise.get('rounds', 1)}")
             
             gif_url = exercise.get("demo gif", exercise.get("gif", None))
