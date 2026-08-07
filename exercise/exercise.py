@@ -21,7 +21,12 @@ class WorkoutStateMachine:
         self.current_round = 1
         self.current_state = self.STATE_IDLE
         self.time_remaining = 0
+        self.total_workout_duration = self.calculate_initial_total()
         
+    def calculate_initial_total(self):
+        """Calculates total fixed duration of the plan at launch."""
+        return sum((ex.get("work duration per set", 0) + ex.get("rest duration per set", 0)) * ex.get("rounds", 1) for ex in self.plan)
+
     def get_current_exercise(self):
         if 0 <= self.current_exercise_idx < len(self.plan):
             return self.plan[self.current_exercise_idx]
@@ -53,7 +58,7 @@ class WorkoutStateMachine:
         if self.current_state == self.STATE_COMPLETED:
             return 0
         if self.current_state == self.STATE_IDLE:
-            return sum((ex.get("work duration per set", 0) + ex.get("rest duration per set", 0)) * ex.get("rounds", 1) for ex in self.plan)
+            return self.total_workout_duration
         
         total = 0
         for idx, ex in enumerate(self.plan):
@@ -123,8 +128,8 @@ class WorkoutApp(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Mac Workout Tracker")
-        self.geometry("550x700")  # Expanded height slightly for new metrics
-        self.configure(bg="#F5F5F7")  # Apple Light Gray
+        self.geometry("550x730")  # Resized gracefully for progress tracking components
+        self.configure(bg="#F5F5F7")  
         
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1)
@@ -196,6 +201,7 @@ class WorkoutApp(tk.Tk):
         self.style.theme_use("clam")
         self.style.configure("TButton", font=("SF Pro Display", 12), padding=8)
         self.style.configure("Action.TButton", font=("SF Pro Display", 13, "bold"))
+        self.style.configure("Horizontal.TProgressbar", thickness=12, background="#0A84FF", troughcolor="#E5E5EA")
     def create_widgets(self):
         # Top Header Bar
         self.header_frame = tk.Frame(self, bg="#FFFFFF", height=50, relief="groove", borderwidth=1)
@@ -228,13 +234,15 @@ class WorkoutApp(tk.Tk):
         self.lbl_round = tk.Label(self.display_frame, text="Round: -- / --", font=("SF Pro Display", 13), bg="#F5F5F7", fg="#86868B")
         self.lbl_round.pack(pady=2)
 
-        # NEW: Total remaining workout time countdown
         self.lbl_total_remaining = tk.Label(self.display_frame, text="Total Remaining: --:--", font=("SF Pro Display", 13, "bold"), bg="#F5F5F7", fg="#86868B")
         self.lbl_total_remaining.pack(pady=2)
 
-        # NEW: Absolute estimated clock time for workout completion
         self.lbl_est_completion = tk.Label(self.display_frame, text="Est. Completion: --:--", font=("SF Pro Display", 13), bg="#F5F5F7", fg="#86868B")
         self.lbl_est_completion.pack(pady=2)
+
+        # NEW: Horizontal workout session progress visual bar 
+        self.progress_bar = ttk.Progressbar(self.display_frame, orient="horizontal", length=320, mode="determinate", style="Horizontal.TProgressbar")
+        self.progress_bar.pack(pady=12)
 
         # Bottom Control Deck Layout
         self.control_frame = tk.Frame(self, bg="#FFFFFF", height=65, relief="groove", borderwidth=1)
@@ -324,6 +332,7 @@ class WorkoutApp(tk.Tk):
             self.gif_canvas.configure(image="", text="Finished!")
             self.btn_action.configure(text="Restart", style="Action.TButton")
             self.btn_skip.configure(state="disabled")
+            self.progress_bar['value'] = 100
             messagebox.showinfo("Done!", "Awesome job! You finished the entire workout plan.")
             return
         self.after(1000, self.run_loop)
@@ -337,7 +346,6 @@ class WorkoutApp(tk.Tk):
         self.lbl_timer.configure(text=f"{minutes:02d}:{seconds:02d}")
         self.lbl_state.configure(text=state)
 
-        # Update remaining overall time display
         total_rem = self.engine.get_total_remaining_time()
         rem_min = total_rem // 60
         rem_sec = total_rem % 60
@@ -347,8 +355,14 @@ class WorkoutApp(tk.Tk):
         if total_rem > 0 and state != WorkoutStateMachine.STATE_COMPLETED:
             est_time = datetime.now() + timedelta(seconds=total_rem)
             self.lbl_est_completion.configure(text=f"Est. Completion: {est_time.strftime('%I:%M:%S %p')}")
+            
+            # Progress calculation: (total_duration - remaining) / total_duration * 100
+            total_dur = self.engine.total_workout_duration
+            progress_pct = ((total_dur - total_rem) / total_dur) * 100 if total_dur > 0 else 0
+            self.progress_bar['value'] = progress_pct
         else:
             self.lbl_est_completion.configure(text="Est. Completion: --:--")
+            self.progress_bar['value'] = 0 if state == WorkoutStateMachine.STATE_IDLE else 100
 
         if exercise:
             self.lbl_exercise.configure(text=exercise.get("activity", "Unknown"))
