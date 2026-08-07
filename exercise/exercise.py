@@ -3,6 +3,7 @@ import json
 import io
 import urllib.request
 import subprocess
+import threading
 import tkinter as tk
 from tkinter import messagebox, ttk
 from PIL import Image, ImageTk
@@ -122,13 +123,12 @@ class WorkoutStateMachine:
         else:
             self.current_state = self.STATE_COMPLETED
             return "COMPLETED"
-
 class WorkoutApp(tk.Tk):
     """macOS optimized Tkinter Interface with URL GIF animation and custom speech alerts."""
     def __init__(self):
         super().__init__()
         self.title("Mac Workout Tracker")
-        self.geometry("550x730")  # Resized gracefully for progress tracking components
+        self.geometry("550x730")  
         self.configure(bg="#F5F5F7")  
         
         self.grid_columnconfigure(0, weight=1)
@@ -153,11 +153,11 @@ class WorkoutApp(tk.Tk):
         """Uses native macOS speech engine ('say') to audibly announce workout changes."""
         exercise = self.engine.get_current_exercise()
         exercise_name = exercise.get("activity", "Exercise") if exercise else ""
-        repetation = exercise.get("repetition per set", 1) if exercise else 0
+        repetition = exercise.get("repetition per set", 1) if exercise else 0
         text_to_speak = ""
 
         if event_type == "START_WORK":
-            text_to_speak = f"Do {repetation} {exercise_name} " if repetation > 1 else f"Do {exercise_name} "
+            text_to_speak = f"Do {repetition} {exercise_name} " if repetition > 1 else f"Do {exercise_name} "
         elif event_type == "START_ROUND":
             text_to_speak = f"Round {self.engine.current_round}. Begin {exercise_name}."
         elif event_type == "START_REST":
@@ -178,7 +178,30 @@ class WorkoutApp(tk.Tk):
             self.workout_data = {
                 "workout plan": [
                     {"activity": "Pushups", "repetition per set": 15, "work duration per set": 10, "rest duration per set": 5, "rounds": 3, "demo gif": "https://giphy.com"},
-                    {"activity": "pullups", "repetition per set": 15, "work duration per set": 10, "rest duration per set": 5, "rounds": 3, "demo gif": "https://giphy.com"}
+                    {"activity": "pullups", "repetition per set": 15, "work duration per set": 10, "rest duration per set": 5, "rounds": 3, "demo gif": "https://giphy.com"},
+                    {
+                        "compound activity": [
+                            {"activity": "jumping jacks", "repetition per set": 15, "work duration per set": 10, "rest duration per set": 5, "rounds": 3, "demo gif": "https://giphy.com"},
+                            {"activity": "tuck jumps", "repetition per set": 15, "work duration per set": 10, "rest duration per set": 5, "rounds": 3, "demo gif": "https://giphy.com"}
+                        ],
+                        "repeat": 3,
+                        "rest duration per set": 5
+                    },
+                    {
+                        "compound activity": [
+                            {
+                                "compound activity": [
+                                    {"activity": "high knees", "repetition per set": 15, "work duration per set": 10, "rest duration per set": 5, "rounds": 3, "demo gif": "https://giphy.com"},
+                                    {"activity": "broad jumps", "repetition per set": 15, "work duration per set": 10, "rest duration per set": 5, "rounds": 3, "demo gif": "https://giphy.com"}
+                                ],
+                                "repeat": 3,
+                                "rest duration per set": 5
+                            },
+                            {"activity": "single leg bound", "repetition per set": 15, "work duration per set": 10, "rest duration per set": 5, "rounds": 3, "demo gif": "https://giphy.com"}
+                        ],
+                        "repeat": 3,
+                        "rest duration per set": 5
+                    }
                 ]
             }
             with open(filename, "w") as f:
@@ -191,10 +214,33 @@ class WorkoutApp(tk.Tk):
                 messagebox.showerror("Error", f"Failed to parse JSON file: {e}")
                 self.workout_data = {"workout plan": []}
 
+        def flatten_plan(activities):
+            flat_list = []
+            for item in activities:
+                if "compound activity" in item:
+                    nested_flattened = flatten_plan(item["compound activity"])
+                    repeats = item.get("repeat", 1)
+                    compound_rest = item.get("rest duration per set", 0)
+                    
+                    for r in range(repeats):
+                        for sub_idx, sub_item in enumerate(nested_flattened):
+                            cloned_item = dict(sub_item)
+                            if sub_idx == len(nested_flattened) - 1 and compound_rest > 0:
+                                cloned_item["rest duration per set"] = sub_item.get("rest duration per set", 0) + compound_rest
+                            flat_list.append(cloned_item)
+                else:
+                    flat_list.append(dict(item))
+            return flat_list
+
+        raw_plan = self.workout_data.get("workout plan", [])
+        flattened_plan = flatten_plan(raw_plan)
+
         previous_workout = {}
-        for workout in self.workout_data["workout plan"]:
+        for workout in flattened_plan:
             previous_workout.update(workout)
             workout.update(previous_workout)
+
+        self.workout_data["workout plan"] = flattened_plan
 
     def setup_styles(self):
         self.style = ttk.Style()
@@ -203,7 +249,6 @@ class WorkoutApp(tk.Tk):
         self.style.configure("Action.TButton", font=("SF Pro Display", 13, "bold"))
         self.style.configure("Horizontal.TProgressbar", thickness=12, background="#0A84FF", troughcolor="#E5E5EA")
     def create_widgets(self):
-        # Top Header Bar
         self.header_frame = tk.Frame(self, bg="#FFFFFF", height=50, relief="groove", borderwidth=1)
         self.header_frame.grid(row=0, column=0, sticky="ew")
         self.header_frame.grid_propagate(False)
@@ -211,7 +256,6 @@ class WorkoutApp(tk.Tk):
         self.lbl_title = tk.Label(self.header_frame, text="Workout Tracker Machine", font=("SF Pro Display", 15, "bold"), bg="#FFFFFF", fg="#1D1D1F")
         self.lbl_title.pack(side="left", padx=20, pady=12)
         
-        # Central Workspace Frame
         self.display_frame = tk.Frame(self, bg="#F5F5F7")
         self.display_frame.grid(row=1, column=0, sticky="nsew", padx=25, pady=15)
         
@@ -224,7 +268,6 @@ class WorkoutApp(tk.Tk):
         self.lbl_state = tk.Label(self.display_frame, text="IDLE", font=("SF Pro Display", 13, "bold"), bg="#F5F5F7", fg="#515154")
         self.lbl_state.pack(pady=5)
 
-        # Image Frame Box
         self.gif_canvas = tk.Label(self.display_frame, bg="#E5E5EA", width=250, height=200, relief="sunken", borderwidth=1)
         self.gif_canvas.pack(pady=10)
 
@@ -240,11 +283,9 @@ class WorkoutApp(tk.Tk):
         self.lbl_est_completion = tk.Label(self.display_frame, text="Est. Completion: --:--", font=("SF Pro Display", 13), bg="#F5F5F7", fg="#86868B")
         self.lbl_est_completion.pack(pady=2)
 
-        # NEW: Horizontal workout session progress visual bar 
         self.progress_bar = ttk.Progressbar(self.display_frame, orient="horizontal", length=320, mode="determinate", style="Horizontal.TProgressbar")
         self.progress_bar.pack(pady=12)
 
-        # Bottom Control Deck Layout
         self.control_frame = tk.Frame(self, bg="#FFFFFF", height=65, relief="groove", borderwidth=1)
         self.control_frame.grid(row=2, column=0, sticky="ew")
         self.control_frame.grid_propagate(False)
@@ -257,36 +298,49 @@ class WorkoutApp(tk.Tk):
         self.btn_skip.configure(state="disabled")
 
     def download_and_parse_gif(self, url):
-        """Downloads external target web asset URL into structured sequence frames safely."""
         if not url or self.loaded_gif_url == url:
             return
         if self.gif_loop_id:
             self.after_cancel(self.gif_loop_id)
             self.gif_loop_id = None
+            
         self.gif_frames.clear()
         self.gif_frames_delay.clear()
         self.gif_idx = 0
         self.loaded_gif_url = url
+        
+        threading.Thread(target=self._async_gif_worker, args=(url,), daemon=True).start()
+
+    def _async_gif_worker(self, url):
         try:
             headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'}
             req = urllib.request.Request(url, headers=headers)
             with urllib.request.urlopen(req, timeout=5) as response:
                 img_data = response.read()
             pil_img = Image.open(io.BytesIO(img_data))
+            
+            temp_frames = []
+            temp_delays = []
             try:
                 while True:
                     frame = pil_img.copy().convert("RGBA")
                     frame.thumbnail((250, 200), Image.Resampling.LANCZOS)
-                    self.gif_frames.append(ImageTk.PhotoImage(frame))
-                    self.gif_frames_delay.append(frame.info.get('duration', 100))
+                    temp_frames.append(frame)
+                    temp_delays.append(frame.info.get('duration', 100))
                     pil_img.seek(pil_img.tell() + 1)
             except EOFError:
                 pass
-            if self.gif_frames:
-                self.animate_gif_canvas()
+                
+            self.after(0, lambda: self._finalize_gif_loading(temp_frames, temp_delays))
         except Exception as error_msg:
             print(f"Error streaming dynamic GIF media: {error_msg}")
-            self.gif_canvas.configure(image="", text="Preview unavailable")
+            self.after(0, lambda: self.gif_canvas.configure(image="", text="Preview unavailable"))
+
+    def _finalize_gif_loading(self, frames, delays):
+        self.gif_frames = [ImageTk.PhotoImage(f) for f in frames]
+        self.gif_frames_delay = delays
+        if self.gif_frames:
+            self.animate_gif_canvas()
 
     def animate_gif_canvas(self):
         if not self.gif_frames:
@@ -351,12 +405,10 @@ class WorkoutApp(tk.Tk):
         rem_sec = total_rem % 60
         self.lbl_total_remaining.configure(text=f"Total Remaining: {rem_min:02d}:{rem_sec:02d}")
 
-        # Update absolute ETA display
         if total_rem > 0 and state != WorkoutStateMachine.STATE_COMPLETED:
             est_time = datetime.now() + timedelta(seconds=total_rem)
             self.lbl_est_completion.configure(text=f"Est. Completion: {est_time.strftime('%I:%M:%S %p')}")
             
-            # Progress calculation: (total_duration - remaining) / total_duration * 100
             total_dur = self.engine.total_workout_duration
             progress_pct = ((total_dur - total_rem) / total_dur) * 100 if total_dur > 0 else 0
             self.progress_bar['value'] = progress_pct
@@ -367,7 +419,7 @@ class WorkoutApp(tk.Tk):
         if exercise:
             self.lbl_exercise.configure(text=exercise.get("activity", "Unknown"))
             reps = exercise.get("repetition per set", "--")
-            self.lbl_reps.configure(text=f"Reps per set: {reps}" if reps > 2 else "Reps per set: --")
+            self.lbl_reps.configure(text=f"Reps per set: {reps}" if reps != "--" else "Reps per set: --")
             self.lbl_round.configure(text=f"Round: {self.engine.current_round} / {exercise.get('rounds', 1)}")
             
             gif_url = exercise.get("demo gif", exercise.get("gif", None))
@@ -379,7 +431,7 @@ class WorkoutApp(tk.Tk):
             self.lbl_reps.configure(text="Reps per set: --")
             self.lbl_round.configure(text="Round: -- / --")
 
-        if state == WorkoutStateMachine.STATE_WORK or state == WorkoutStateMachine.STATE_REST:
+        if state in (WorkoutStateMachine.STATE_WORK, WorkoutStateMachine.STATE_REST):
             self.lbl_state.configure(fg="#FF453A" if state == WorkoutStateMachine.STATE_WORK else "#34C759")
             self.btn_action.configure(text="Pause")
         elif state == WorkoutStateMachine.STATE_IDLE:
