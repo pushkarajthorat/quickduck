@@ -125,11 +125,11 @@ class WorkoutStateMachine:
             self.current_state = self.STATE_COMPLETED
             return "COMPLETED"
 class WorkoutApp(tk.Tk):
-    """macOS optimized Tkinter Interface with Dynamic Plan Selector Dropdown functionality."""
+    """macOS optimized Tkinter Interface with Friendly Alias JSON Dropdown."""
     def __init__(self):
         super().__init__()
         self.title("Mac Workout Tracker")
-        self.geometry("550x770")  # Padded height slightly to accommodate selection row comfortably
+        self.geometry("550x770")  
         self.configure(bg="#F5F5F7")  
         
         self.grid_columnconfigure(0, weight=1)
@@ -141,53 +141,67 @@ class WorkoutApp(tk.Tk):
         self.gif_loop_id = None
         self.loaded_gif_url = None
         self.timer_running = False
+        
+        self.alias_to_file = {}
+        self.file_to_alias = {}
+        self.scan_workout_files()
 
-        self.load_workout_json("workout.json")
+        # Load workout.json default choice
+        default_file = "workout.json"
+        self.load_workout_json(default_file if os.path.exists(default_file) else None)
+        
         self.setup_styles()
         self.create_widgets()
         self.update_ui_display()
 
-    def announce_state(self, event_type):
-        """Uses native macOS speech engine ('say') to audibly announce workout changes."""
-        exercise = self.engine.get_current_exercise()
-        exercise_name = exercise.get("activity", "Exercise") if exercise else ""
-        repetition = exercise.get("repetition per set", 1) if exercise else 0
-        text_to_speak = ""
-
-        if event_type == "START_WORK":
-            text_to_speak = f"Do {repetition} {exercise_name} " if repetition > 1 else f"Do {exercise_name} "
-        elif event_type == "START_ROUND":
-            text_to_speak = f"Round {self.engine.current_round}. Begin {exercise_name}."
-        elif event_type == "START_REST":
-            text_to_speak = "Time to rest. Take a break."
-        elif event_type == "COMPLETED":
-            text_to_speak = "Workout complete! Amazing job today."
-        else:
-            return
-
-        try:
-            subprocess.Popen(["say", text_to_speak], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        except Exception as error_msg:
-            print(f"Speech module skipped: {error_msg}")
+    def scan_workout_files(self):
+        """Scans the directory for files and caches their human-friendly alias names."""
+        self.alias_to_file.clear()
+        self.file_to_alias.clear()
+        found_files = glob.glob("workout*.json")
+        
+        if "workout.json" not in found_files and os.path.exists("workout.json"):
+            found_files.append("workout.json")
+            
+        for filepath in found_files:
+            try:
+                with open(filepath, "r") as f:
+                    data = json.load(f)
+                    friendly_name = data.get("alias", os.path.basename(filepath))
+            except Exception:
+                friendly_name = os.path.basename(filepath)
+                
+            # Handle unique name protection duplicates safely
+            unique_name = friendly_name
+            counter = 1
+            while unique_name in self.alias_to_file:
+                unique_name = f"{friendly_name} ({counter})"
+                counter += 1
+                
+            self.alias_to_file[unique_name] = filepath
+            self.file_to_alias[filepath] = unique_name
 
     def load_workout_json(self, filename="workout.json"):
         """Locates, opens, parses, and recursively flattens the chosen json workout plan."""
-        if filename == "workout.json" and not os.path.exists(filename):
+        if not filename or (filename == "workout.json" and not os.path.exists(filename)):
             self.workout_data = {
                 "workout plan": [
                     {"activity": "Pushups", "repetition per set": 15, "work duration per set": 10, "rest duration per set": 5, "rounds": 3, "demo gif": "https://giphy.com"},
                     {"activity": "pullups", "repetition per set": 15, "work duration per set": 10, "rest duration per set": 5, "rounds": 3, "demo gif": "https://giphy.com"}
-                ]
+                ],
+                "alias": "Default General Routine"
             }
-            with open(filename, "w") as f:
-                json.dump(self.workout_data, f, indent=4)
+            if filename == "workout.json":
+                with open(filename, "w") as f:
+                    json.dump(self.workout_data, f, indent=4)
+                self.scan_workout_files()
         else:
             try:
                 with open(filename, "r") as f:
                     self.workout_data = json.load(f)
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to parse JSON file {filename}: {e}")
-                self.workout_data = {"workout plan": []}
+                self.workout_data = {"workout plan": [], "alias": "Error Loading Plan"}
 
         def flatten_plan(activities):
             flat_list = []
@@ -220,9 +234,10 @@ class WorkoutApp(tk.Tk):
 
     def on_plan_selected(self, event):
         """Fires dynamically when an idle dropdown choice switches to reload application assets."""
-        selected_file = self.cmb_plans.get()
-        if os.path.exists(selected_file):
-            self.load_workout_json(selected_file)
+        selected_alias = self.cmb_plans.get()
+        target_file = self.alias_to_file.get(selected_alias)
+        if target_file and os.path.exists(target_file):
+            self.load_workout_json(target_file)
             self.update_ui_display()
 
     def setup_styles(self):
@@ -232,6 +247,29 @@ class WorkoutApp(tk.Tk):
         self.style.configure("Action.TButton", font=("SF Pro Display", 13, "bold"))
         self.style.configure("Horizontal.TProgressbar", thickness=12, background="#0A84FF", troughcolor="#E5E5EA")
         self.style.configure("TCombobox", font=("SF Pro Display", 11), padding=4)
+    def announce_state(self, event_type):
+        """Uses native macOS speech engine ('say') to audibly announce workout changes."""
+        exercise = self.engine.get_current_exercise()
+        exercise_name = exercise.get("activity", "Exercise") if exercise else ""
+        repetition = exercise.get("repetition per set", 1) if exercise else 0
+        text_to_speak = ""
+
+        if event_type == "START_WORK":
+            text_to_speak = f"Do {repetition} {exercise_name} " if repetition > 1 else f"Do {exercise_name} "
+        elif event_type == "START_ROUND":
+            text_to_speak = f"Round {self.engine.current_round}. Begin {exercise_name}."
+        elif event_type == "START_REST":
+            text_to_speak = "Time to rest. Take a break."
+        elif event_type == "COMPLETED":
+            text_to_speak = "Workout complete! Amazing job today."
+        else:
+            return
+
+        try:
+            subprocess.Popen(["say", text_to_speak], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except Exception as error_msg:
+            print(f"Speech module skipped: {error_msg}")
+
     def create_widgets(self):
         self.header_frame = tk.Frame(self, bg="#FFFFFF", height=50, relief="groove", borderwidth=1)
         self.header_frame.grid(row=0, column=0, sticky="ew")
@@ -243,22 +281,18 @@ class WorkoutApp(tk.Tk):
         self.display_frame = tk.Frame(self, bg="#F5F5F7")
         self.display_frame.grid(row=1, column=0, sticky="nsew", padx=25, pady=15)
 
-        # Dropdown Option Panel Frame Layout
         self.selector_frame = tk.Frame(self.display_frame, bg="#F5F5F7")
         self.selector_frame.pack(pady=5, fill="x")
         
-        self.lbl_select = tk.Label(self.selector_frame, text="Choose Routine File:", font=("SF Pro Display", 11, "bold"), bg="#F5F5F7", fg="#515154")
+        self.lbl_select = tk.Label(self.selector_frame, text="Choose Routine:", font=("SF Pro Display", 11, "bold"), bg="#F5F5F7", fg="#515154")
         self.lbl_select.pack(side="left", padx=5)
 
-        # Auto-scans file systems looking for target match extensions
-        found_plans = glob.glob("workout*.json")
-        if "workout.json" not in found_plans and os.path.exists("workout.json"):
-            found_plans.append("workout.json")
-        found_plans = sorted(list(set(found_plans)))
-        
-        self.cmb_plans = ttk.Combobox(self.selector_frame, values=found_plans, state="readonly", width=25)
+        sorted_aliases = sorted(list(self.alias_to_file.keys()))
+        self.cmb_plans = ttk.Combobox(self.selector_frame, values=sorted_aliases, state="readonly", width=25)
         self.cmb_plans.pack(side="left", padx=10)
-        self.cmb_plans.set("workout.json" if "workout.json" in found_plans else found_plans[0] if found_plans else "")
+        
+        default_alias = self.file_to_alias.get("workout.json", sorted_aliases[0] if sorted_aliases else "")
+        self.cmb_plans.set(default_alias)
         self.cmb_plans.bind("<<ComboboxSelected>>", self.on_plan_selected)
         
         self.lbl_exercise = tk.Label(self.display_frame, text="Ready to Start", font=("SF Pro Display", 22, "bold"), bg="#F5F5F7", fg="#1D1D1F")
@@ -300,7 +334,7 @@ class WorkoutApp(tk.Tk):
         self.btn_skip.configure(state="disabled")
 
     def download_and_parse_gif(self, url):
-        if not url or self.loaded_gif_url == url:
+        if not url or self.loaded_gif_url == url or url == "gif url":
             return
         if self.gif_loop_id:
             self.after_cancel(self.gif_loop_id)
@@ -353,7 +387,7 @@ class WorkoutApp(tk.Tk):
             if success:
                 self.timer_running = True
                 self.btn_skip.configure(state="normal")
-                self.cmb_plans.configure(state="disabled")  # Freezes selection interactions securely
+                self.cmb_plans.configure(state="disabled")  
                 if event:
                     self.announce_state(event)
                 self.run_loop()
@@ -385,7 +419,7 @@ class WorkoutApp(tk.Tk):
             self.gif_canvas.configure(image="", text="Finished!")
             self.btn_action.configure(text="Restart", style="Action.TButton")
             self.btn_skip.configure(state="disabled")
-            self.cmb_plans.configure(state="readonly")  # Automatically releases dropdown input locks
+            self.cmb_plans.configure(state="readonly")  
             self.progress_bar['value'] = 100
             messagebox.showinfo("Done!", "Awesome job! You finished the entire workout plan.")
             return
@@ -415,13 +449,12 @@ class WorkoutApp(tk.Tk):
         else:
             self.lbl_est_completion.configure(text="Est. Completion: --:--")
             self.progress_bar['value'] = 0 if state == WorkoutStateMachine.STATE_IDLE else 100
-
         if exercise:
             self.lbl_exercise.configure(text=exercise.get("activity", "Unknown"))
             reps = exercise.get("repetition per set", "--")
             self.lbl_reps.configure(text=f"Reps per set: {reps}" if reps != "--" else "Reps per set: --")
             self.lbl_round.configure(text=f"Round: {self.engine.current_round} / {exercise.get('rounds', 1)}")
-            
+
             gif_url = exercise.get("demo gif", exercise.get("gif", None))
             if gif_url and self.loaded_gif_url != gif_url:
                 self.gif_canvas.configure(image="", text="Loading demonstration...")
@@ -443,3 +476,5 @@ class WorkoutApp(tk.Tk):
 if __name__ == "__main__":
     app = WorkoutApp()
     app.mainloop()
+
+
