@@ -125,11 +125,11 @@ class WorkoutStateMachine:
             self.current_state = self.STATE_COMPLETED
             return "COMPLETED"
 class WorkoutApp(tk.Tk):
-    """macOS optimized Tkinter Interface with friendly dropdown & schema preview layout."""
+    """macOS optimized Tkinter Interface with Friendly Alias JSON Dropdown."""
     def __init__(self):
         super().__init__()
         self.title("Mac Workout Tracker")
-        self.geometry("550x820")  # Padded slightly for structural text summary expansion
+        self.geometry("550x850")  
         self.configure(bg="#F5F5F7")  
         
         self.grid_columnconfigure(0, weight=1)
@@ -155,7 +155,7 @@ class WorkoutApp(tk.Tk):
         self.update_preview_panel()
 
     def scan_workout_files(self):
-        """Locates workout matching targets and resolves their friendly alias labels."""
+        """Scans the directory for files and caches their human-friendly alias names."""
         self.alias_to_file.clear()
         self.file_to_alias.clear()
         found_files = glob.glob("workout*.json")
@@ -228,7 +228,6 @@ class WorkoutApp(tk.Tk):
             previous_workout.update(workout)
             workout.update(previous_workout)
 
-        # Sync backend variables safely
         cleaned_workout_dict = dict(self.workout_data)
         cleaned_workout_dict["workout plan"] = self.flattened_plan_cache
         self.engine = WorkoutStateMachine(cleaned_workout_dict)
@@ -241,7 +240,7 @@ class WorkoutApp(tk.Tk):
             self.update_ui_display()
             self.update_preview_panel()
     def update_preview_panel(self):
-        """Generates a text summary detailing structural activity breakdown properties."""
+        """Generates text blueprint with real-time running exercise highlight tags."""
         self.txt_preview.configure(state="normal")
         self.txt_preview.delete("1.0", tk.END)
         
@@ -259,12 +258,17 @@ class WorkoutApp(tk.Tk):
             self.txt_preview.insert(tk.END, "Error reading sequence parameters.\n")
             self.txt_preview.configure(state="disabled")
             return
-            
-        # Recursive text blueprint summary parser loop
+
+        current_idx = self.engine.current_exercise_idx
+        state = self.engine.current_state
+        flat_counter = 0
+
+        # Dynamic inner text layout tree generator
         def generate_blueprint_text(activities, level=0):
+            nonlocal flat_counter
             summary = ""
             indent = "  " * level
-            for idx, item in enumerate(activities):
+            for item in activities:
                 if "compound activity" in item:
                     repeats = item.get("repeat", 1)
                     comp_rest = item.get("rest duration per set", 0)
@@ -275,25 +279,48 @@ class WorkoutApp(tk.Tk):
                     sets = item.get("rounds", 1)
                     work = item.get("work duration per set", 0)
                     rest = item.get("rest duration per set", 0)
-                    summary += f"{indent}- {name}: {sets} sets [W:{work}s / R:{rest}s]\n"
+                    
+                    # Highlight evaluation if matching unrolled indices
+                    is_active = (flat_counter == current_idx) and (state in ("WORK", "REST"))
+                    prefix = "▶ [ACTIVE] " if is_active else "- "
+                    line_text = f"{indent}{prefix}{name}: {sets} sets [W:{work}s / R:{rest}s]\n"
+                    
+                    start_char = len(summary)
+                    summary += line_text
+                    end_char = len(summary)
+                    
+                    flat_counter += 1
             return summary
 
         raw_list = raw_data.get("workout plan", [])
-        total_unrolled = len(self.flattened_plan_cache)
         total_duration = self.engine.total_workout_duration
-        
-        minutes = total_duration // 60
-        seconds = total_duration % 60
+        rem_min, rem_sec = total_duration // 60, total_duration % 60
         
         header = f"--- Routine Structure Breakdown ---\n"
-        header += f"Est. Active Blocks (Flattened): {total_unrolled}\n"
-        header += f"Total Fixed Time Length: {minutes:02d}:{seconds:02d}\n"
+        header += f"Est. Active Blocks: {len(self.flattened_plan_cache)} | Total Length: {rem_min:02d}:{rem_sec:02d}\n"
         header += f"-----------------------------------\n"
         
-        blueprint_body = generate_blueprint_text(raw_list)
+        self.txt_preview.insert(tk.END, header)
+        body_text = generate_blueprint_text(raw_list)
+        self.txt_preview.insert(tk.END, body_text)
         
-        self.txt_preview.insert(tk.END, header + blueprint_body)
+        # Color accent current block text string coordinates
+        self.txt_preview.tag_remove("active_highlight", "1.0", tk.END)
+        idx_search = self.txt_preview.search("▶ [ACTIVE]", "1.0", tk.END)
+        if idx_search:
+            line_end = f"{idx_search} lineend"
+            self.txt_preview.tag_add("active_highlight", idx_search, line_end)
+            self.txt_preview.tag_config("active_highlight", background="#0A84FF", foreground="#FFFFFF")
+            self.txt_preview.see(idx_search)
+
         self.txt_preview.configure(state="disabled")
+
+    def toggle_preview_visibility(self):
+        """Collapses or expands the text preview viewport frame safely."""
+        if self.var_hide_preview.get():
+            self.txt_preview.pack_forget()
+        else:
+            self.txt_preview.pack(pady=5, fill="x", after=self.selector_frame)
 
     def setup_styles(self):
         self.style = ttk.Style()
@@ -302,7 +329,7 @@ class WorkoutApp(tk.Tk):
         self.style.configure("Action.TButton", font=("SF Pro Display", 13, "bold"))
         self.style.configure("Horizontal.TProgressbar", thickness=12, background="#0A84FF", troughcolor="#E5E5EA")
         self.style.configure("TCombobox", font=("SF Pro Display", 11), padding=4)
-
+        self.style.configure("TCheckbutton", font=("SF Pro Display", 11), background="#F5F5F7")
     def announce_state(self, event_type):
         exercise = self.engine.get_current_exercise()
         exercise_name = exercise.get("activity", "Exercise") if exercise else ""
@@ -324,6 +351,7 @@ class WorkoutApp(tk.Tk):
             subprocess.Popen(["say", text_to_speak], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         except Exception as error_msg:
             print(f"Speech module skipped: {error_msg}")
+
     def create_widgets(self):
         self.header_frame = tk.Frame(self, bg="#FFFFFF", height=50, relief="groove", borderwidth=1)
         self.header_frame.grid(row=0, column=0, sticky="ew")
@@ -342,15 +370,19 @@ class WorkoutApp(tk.Tk):
         self.lbl_select.pack(side="left", padx=5)
 
         sorted_aliases = sorted(list(self.alias_to_file.keys()))
-        self.cmb_plans = ttk.Combobox(self.selector_frame, values=sorted_aliases, state="readonly", width=25)
-        self.cmb_plans.pack(side="left", padx=10)
+        self.cmb_plans = ttk.Combobox(self.selector_frame, values=sorted_aliases, state="readonly", width=20)
+        self.cmb_plans.pack(side="left", padx=5)
         
         default_alias = self.file_to_alias.get("workout.json", sorted_aliases if sorted_aliases else "")
         self.cmb_plans.set(default_alias)
         self.cmb_plans.bind("<<ComboboxSelected>>", self.on_plan_selected)
         
-        # Structure breakdown preview text widget implementation box
-        self.txt_preview = tk.Text(self.display_frame, height=6, bg="#FFFFFF", fg="#1D1D1F", font=("Courier", 11), relief="sunken", borderwidth=1)
+        # Hide Preview Checkbox Control Deck UI Element
+        self.var_hide_preview = tk.BooleanVar(value=False)
+        self.chk_hide_preview = ttk.Checkbutton(self.selector_frame, text="Hide Preview", variable=self.var_hide_preview, command=self.toggle_preview_visibility, style="TCheckbutton")
+        self.chk_hide_preview.pack(side="left", padx=5)
+        
+        self.txt_preview = tk.Text(self.display_frame, height=5, bg="#FFFFFF", fg="#1D1D1F", font=("Courier", 11), relief="sunken", borderwidth=1)
         self.txt_preview.pack(pady=5, fill="x")
         
         self.lbl_exercise = tk.Label(self.display_frame, text="Ready to Start", font=("SF Pro Display", 22, "bold"), bg="#F5F5F7", fg="#1D1D1F")
@@ -364,7 +396,6 @@ class WorkoutApp(tk.Tk):
 
         self.gif_canvas = tk.Label(self.display_frame, bg="#E5E5EA", width=250, height=180, relief="sunken", borderwidth=1)
         self.gif_canvas.pack(pady=5)
-
         self.lbl_timer = tk.Label(self.display_frame, text="00:00", font=("SF Pro Display", 40, "bold"), bg="#F5F5F7", fg="#1D1D1F")
         self.lbl_timer.pack(pady=2)
 
@@ -462,6 +493,7 @@ class WorkoutApp(tk.Tk):
         if event:
             self.announce_state(event)
         self.update_ui_display()
+        self.update_preview_panel()
 
     def run_loop(self):
         if not self.timer_running:
@@ -470,6 +502,7 @@ class WorkoutApp(tk.Tk):
         self.update_ui_display()
         if transition_event:
             self.announce_state(transition_event)
+            self.update_preview_panel()  # Refresh structural highlights on state shifts
         if self.engine.current_state == WorkoutStateMachine.STATE_COMPLETED:
             self.timer_running = False
             if self.gif_loop_id:
@@ -479,6 +512,7 @@ class WorkoutApp(tk.Tk):
             self.btn_skip.configure(state="disabled")
             self.cmb_plans.configure(state="readonly")  
             self.progress_bar['value'] = 100
+            self.update_preview_panel()
             messagebox.showinfo("Done!", "Awesome job! You finished the entire workout plan.")
             return
         self.after(1000, self.run_loop)
@@ -493,8 +527,7 @@ class WorkoutApp(tk.Tk):
         self.lbl_state.configure(text=state)
 
         total_rem = self.engine.get_total_remaining_time()
-        rem_min = total_rem // 60
-        rem_sec = total_rem % 60
+        rem_min, rem_sec = total_rem // 60, total_rem % 60
         self.lbl_total_remaining.configure(text=f"Total Remaining: {rem_min:02d}:{rem_sec:02d}")
 
         if total_rem > 0 and state != WorkoutStateMachine.STATE_COMPLETED:
@@ -531,6 +564,7 @@ class WorkoutApp(tk.Tk):
             self.btn_action.configure(text="Start Plan")
         elif state == WorkoutStateMachine.STATE_COMPLETED:
             self.lbl_state.configure(fg="#0A84FF")
+
 if __name__ == "__main__":
     app = WorkoutApp()
     app.mainloop()
