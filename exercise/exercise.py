@@ -125,11 +125,11 @@ class WorkoutStateMachine:
             self.current_state = self.STATE_COMPLETED
             return "COMPLETED"
 class WorkoutApp(tk.Tk):
-    """macOS optimized Tkinter Interface with Friendly Alias JSON Dropdown."""
+    """macOS optimized Tkinter Interface with friendly dropdown & schema preview layout."""
     def __init__(self):
         super().__init__()
         self.title("Mac Workout Tracker")
-        self.geometry("550x770")  
+        self.geometry("550x820")  # Padded slightly for structural text summary expansion
         self.configure(bg="#F5F5F7")  
         
         self.grid_columnconfigure(0, weight=1)
@@ -146,16 +146,16 @@ class WorkoutApp(tk.Tk):
         self.file_to_alias = {}
         self.scan_workout_files()
 
-        # Load workout.json default choice
         default_file = "workout.json"
         self.load_workout_json(default_file if os.path.exists(default_file) else None)
         
         self.setup_styles()
         self.create_widgets()
         self.update_ui_display()
+        self.update_preview_panel()
 
     def scan_workout_files(self):
-        """Scans the directory for files and caches their human-friendly alias names."""
+        """Locates workout matching targets and resolves their friendly alias labels."""
         self.alias_to_file.clear()
         self.file_to_alias.clear()
         found_files = glob.glob("workout*.json")
@@ -171,7 +171,6 @@ class WorkoutApp(tk.Tk):
             except Exception:
                 friendly_name = os.path.basename(filepath)
                 
-            # Handle unique name protection duplicates safely
             unique_name = friendly_name
             counter = 1
             while unique_name in self.alias_to_file:
@@ -222,23 +221,79 @@ class WorkoutApp(tk.Tk):
             return flat_list
 
         raw_plan = self.workout_data.get("workout plan", [])
-        flattened_plan = flatten_plan(raw_plan)
+        self.flattened_plan_cache = flatten_plan(raw_plan)
 
         previous_workout = {}
-        for workout in flattened_plan:
+        for workout in self.flattened_plan_cache:
             previous_workout.update(workout)
             workout.update(previous_workout)
 
-        self.workout_data["workout plan"] = flattened_plan
-        self.engine = WorkoutStateMachine(self.workout_data)
+        # Sync backend variables safely
+        cleaned_workout_dict = dict(self.workout_data)
+        cleaned_workout_dict["workout plan"] = self.flattened_plan_cache
+        self.engine = WorkoutStateMachine(cleaned_workout_dict)
 
     def on_plan_selected(self, event):
-        """Fires dynamically when an idle dropdown choice switches to reload application assets."""
         selected_alias = self.cmb_plans.get()
         target_file = self.alias_to_file.get(selected_alias)
         if target_file and os.path.exists(target_file):
             self.load_workout_json(target_file)
             self.update_ui_display()
+            self.update_preview_panel()
+    def update_preview_panel(self):
+        """Generates a text summary detailing structural activity breakdown properties."""
+        self.txt_preview.configure(state="normal")
+        self.txt_preview.delete("1.0", tk.END)
+        
+        selected_alias = self.cmb_plans.get()
+        target_file = self.alias_to_file.get(selected_alias)
+        if not target_file or not os.path.exists(target_file):
+            self.txt_preview.insert(tk.END, "No routine structure details found.\n")
+            self.txt_preview.configure(state="disabled")
+            return
+            
+        try:
+            with open(target_file, "r") as f:
+                raw_data = json.load(f)
+        except Exception:
+            self.txt_preview.insert(tk.END, "Error reading sequence parameters.\n")
+            self.txt_preview.configure(state="disabled")
+            return
+            
+        # Recursive text blueprint summary parser loop
+        def generate_blueprint_text(activities, level=0):
+            summary = ""
+            indent = "  " * level
+            for idx, item in enumerate(activities):
+                if "compound activity" in item:
+                    repeats = item.get("repeat", 1)
+                    comp_rest = item.get("rest duration per set", 0)
+                    summary += f"{indent}• [Compound Block] Repeat x{repeats} (Rest: {comp_rest}s):\n"
+                    summary += generate_blueprint_text(item["compound activity"], level + 1)
+                else:
+                    name = item.get("activity", "Unknown")
+                    sets = item.get("rounds", 1)
+                    work = item.get("work duration per set", 0)
+                    rest = item.get("rest duration per set", 0)
+                    summary += f"{indent}- {name}: {sets} sets [W:{work}s / R:{rest}s]\n"
+            return summary
+
+        raw_list = raw_data.get("workout plan", [])
+        total_unrolled = len(self.flattened_plan_cache)
+        total_duration = self.engine.total_workout_duration
+        
+        minutes = total_duration // 60
+        seconds = total_duration % 60
+        
+        header = f"--- Routine Structure Breakdown ---\n"
+        header += f"Est. Active Blocks (Flattened): {total_unrolled}\n"
+        header += f"Total Fixed Time Length: {minutes:02d}:{seconds:02d}\n"
+        header += f"-----------------------------------\n"
+        
+        blueprint_body = generate_blueprint_text(raw_list)
+        
+        self.txt_preview.insert(tk.END, header + blueprint_body)
+        self.txt_preview.configure(state="disabled")
 
     def setup_styles(self):
         self.style = ttk.Style()
@@ -247,8 +302,8 @@ class WorkoutApp(tk.Tk):
         self.style.configure("Action.TButton", font=("SF Pro Display", 13, "bold"))
         self.style.configure("Horizontal.TProgressbar", thickness=12, background="#0A84FF", troughcolor="#E5E5EA")
         self.style.configure("TCombobox", font=("SF Pro Display", 11), padding=4)
+
     def announce_state(self, event_type):
-        """Uses native macOS speech engine ('say') to audibly announce workout changes."""
         exercise = self.engine.get_current_exercise()
         exercise_name = exercise.get("activity", "Exercise") if exercise else ""
         repetition = exercise.get("repetition per set", 1) if exercise else 0
@@ -269,7 +324,6 @@ class WorkoutApp(tk.Tk):
             subprocess.Popen(["say", text_to_speak], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         except Exception as error_msg:
             print(f"Speech module skipped: {error_msg}")
-
     def create_widgets(self):
         self.header_frame = tk.Frame(self, bg="#FFFFFF", height=50, relief="groove", borderwidth=1)
         self.header_frame.grid(row=0, column=0, sticky="ew")
@@ -282,7 +336,7 @@ class WorkoutApp(tk.Tk):
         self.display_frame.grid(row=1, column=0, sticky="nsew", padx=25, pady=15)
 
         self.selector_frame = tk.Frame(self.display_frame, bg="#F5F5F7")
-        self.selector_frame.pack(pady=5, fill="x")
+        self.selector_frame.pack(pady=4, fill="x")
         
         self.lbl_select = tk.Label(self.selector_frame, text="Choose Routine:", font=("SF Pro Display", 11, "bold"), bg="#F5F5F7", fg="#515154")
         self.lbl_select.pack(side="left", padx=5)
@@ -291,36 +345,40 @@ class WorkoutApp(tk.Tk):
         self.cmb_plans = ttk.Combobox(self.selector_frame, values=sorted_aliases, state="readonly", width=25)
         self.cmb_plans.pack(side="left", padx=10)
         
-        default_alias = self.file_to_alias.get("workout.json", sorted_aliases[0] if sorted_aliases else "")
+        default_alias = self.file_to_alias.get("workout.json", sorted_aliases if sorted_aliases else "")
         self.cmb_plans.set(default_alias)
         self.cmb_plans.bind("<<ComboboxSelected>>", self.on_plan_selected)
         
+        # Structure breakdown preview text widget implementation box
+        self.txt_preview = tk.Text(self.display_frame, height=6, bg="#FFFFFF", fg="#1D1D1F", font=("Courier", 11), relief="sunken", borderwidth=1)
+        self.txt_preview.pack(pady=5, fill="x")
+        
         self.lbl_exercise = tk.Label(self.display_frame, text="Ready to Start", font=("SF Pro Display", 22, "bold"), bg="#F5F5F7", fg="#1D1D1F")
-        self.lbl_exercise.pack(pady=5)
+        self.lbl_exercise.pack(pady=4)
         
         self.lbl_reps = tk.Label(self.display_frame, text="Reps per set: --", font=("SF Pro Display", 13), bg="#F5F5F7", fg="#86868B")
-        self.lbl_reps.pack(pady=2)
+        self.lbl_reps.pack(pady=1)
 
         self.lbl_state = tk.Label(self.display_frame, text="IDLE", font=("SF Pro Display", 13, "bold"), bg="#F5F5F7", fg="#515154")
-        self.lbl_state.pack(pady=5)
+        self.lbl_state.pack(pady=4)
 
-        self.gif_canvas = tk.Label(self.display_frame, bg="#E5E5EA", width=250, height=200, relief="sunken", borderwidth=1)
-        self.gif_canvas.pack(pady=10)
+        self.gif_canvas = tk.Label(self.display_frame, bg="#E5E5EA", width=250, height=180, relief="sunken", borderwidth=1)
+        self.gif_canvas.pack(pady=5)
 
-        self.lbl_timer = tk.Label(self.display_frame, text="00:00", font=("SF Pro Display", 44, "bold"), bg="#F5F5F7", fg="#1D1D1F")
-        self.lbl_timer.pack(pady=5)
+        self.lbl_timer = tk.Label(self.display_frame, text="00:00", font=("SF Pro Display", 40, "bold"), bg="#F5F5F7", fg="#1D1D1F")
+        self.lbl_timer.pack(pady=2)
 
         self.lbl_round = tk.Label(self.display_frame, text="Round: -- / --", font=("SF Pro Display", 13), bg="#F5F5F7", fg="#86868B")
-        self.lbl_round.pack(pady=2)
+        self.lbl_round.pack(pady=1)
 
         self.lbl_total_remaining = tk.Label(self.display_frame, text="Total Remaining: --:--", font=("SF Pro Display", 13, "bold"), bg="#F5F5F7", fg="#86868B")
-        self.lbl_total_remaining.pack(pady=2)
+        self.lbl_total_remaining.pack(pady=1)
 
         self.lbl_est_completion = tk.Label(self.display_frame, text="Est. Completion: --:--", font=("SF Pro Display", 13), bg="#F5F5F7", fg="#86868B")
-        self.lbl_est_completion.pack(pady=2)
+        self.lbl_est_completion.pack(pady=1)
 
         self.progress_bar = ttk.Progressbar(self.display_frame, orient="horizontal", length=320, mode="determinate", style="Horizontal.TProgressbar")
-        self.progress_bar.pack(pady=12)
+        self.progress_bar.pack(pady=8)
 
         self.control_frame = tk.Frame(self, bg="#FFFFFF", height=65, relief="groove", borderwidth=1)
         self.control_frame.grid(row=2, column=0, sticky="ew")
@@ -357,7 +415,7 @@ class WorkoutApp(tk.Tk):
             try:
                 while True:
                     frame = pil_img.copy().convert("RGBA")
-                    frame.thumbnail((250, 200), Image.Resampling.LANCZOS)
+                    frame.thumbnail((250, 180), Image.Resampling.LANCZOS)
                     temp_frames.append(frame)
                     temp_delays.append(frame.info.get('duration', 100))
                     pil_img.seek(pil_img.tell() + 1)
@@ -449,12 +507,13 @@ class WorkoutApp(tk.Tk):
         else:
             self.lbl_est_completion.configure(text="Est. Completion: --:--")
             self.progress_bar['value'] = 0 if state == WorkoutStateMachine.STATE_IDLE else 100
+
         if exercise:
             self.lbl_exercise.configure(text=exercise.get("activity", "Unknown"))
             reps = exercise.get("repetition per set", "--")
             self.lbl_reps.configure(text=f"Reps per set: {reps}" if reps != "--" else "Reps per set: --")
             self.lbl_round.configure(text=f"Round: {self.engine.current_round} / {exercise.get('rounds', 1)}")
-
+            
             gif_url = exercise.get("demo gif", exercise.get("gif", None))
             if gif_url and self.loaded_gif_url != gif_url:
                 self.gif_canvas.configure(image="", text="Loading demonstration...")
@@ -472,9 +531,6 @@ class WorkoutApp(tk.Tk):
             self.btn_action.configure(text="Start Plan")
         elif state == WorkoutStateMachine.STATE_COMPLETED:
             self.lbl_state.configure(fg="#0A84FF")
-
 if __name__ == "__main__":
     app = WorkoutApp()
     app.mainloop()
-
-
