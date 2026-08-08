@@ -1,4 +1,5 @@
 import os
+import glob
 import json
 import io
 import urllib.request
@@ -124,11 +125,11 @@ class WorkoutStateMachine:
             self.current_state = self.STATE_COMPLETED
             return "COMPLETED"
 class WorkoutApp(tk.Tk):
-    """macOS optimized Tkinter Interface with URL GIF animation and custom speech alerts."""
+    """macOS optimized Tkinter Interface with Dynamic Plan Selector Dropdown functionality."""
     def __init__(self):
         super().__init__()
         self.title("Mac Workout Tracker")
-        self.geometry("550x730")  
+        self.geometry("550x770")  # Padded height slightly to accommodate selection row comfortably
         self.configure(bg="#F5F5F7")  
         
         self.grid_columnconfigure(0, weight=1)
@@ -139,15 +140,12 @@ class WorkoutApp(tk.Tk):
         self.gif_idx = 0
         self.gif_loop_id = None
         self.loaded_gif_url = None
+        self.timer_running = False
 
-        self.load_workout_json()
-        self.engine = WorkoutStateMachine(self.workout_data)
-        
+        self.load_workout_json("workout.json")
         self.setup_styles()
         self.create_widgets()
         self.update_ui_display()
-        
-        self.timer_running = False
 
     def announce_state(self, event_type):
         """Uses native macOS speech engine ('say') to audibly announce workout changes."""
@@ -172,36 +170,13 @@ class WorkoutApp(tk.Tk):
         except Exception as error_msg:
             print(f"Speech module skipped: {error_msg}")
 
-    def load_workout_json(self):
-        filename = "workout.json"
-        if not os.path.exists(filename):
+    def load_workout_json(self, filename="workout.json"):
+        """Locates, opens, parses, and recursively flattens the chosen json workout plan."""
+        if filename == "workout.json" and not os.path.exists(filename):
             self.workout_data = {
                 "workout plan": [
                     {"activity": "Pushups", "repetition per set": 15, "work duration per set": 10, "rest duration per set": 5, "rounds": 3, "demo gif": "https://giphy.com"},
-                    {"activity": "pullups", "repetition per set": 15, "work duration per set": 10, "rest duration per set": 5, "rounds": 3, "demo gif": "https://giphy.com"},
-                    {
-                        "compound activity": [
-                            {"activity": "jumping jacks", "repetition per set": 15, "work duration per set": 10, "rest duration per set": 5, "rounds": 3, "demo gif": "https://giphy.com"},
-                            {"activity": "tuck jumps", "repetition per set": 15, "work duration per set": 10, "rest duration per set": 5, "rounds": 3, "demo gif": "https://giphy.com"}
-                        ],
-                        "repeat": 3,
-                        "rest duration per set": 5
-                    },
-                    {
-                        "compound activity": [
-                            {
-                                "compound activity": [
-                                    {"activity": "high knees", "repetition per set": 15, "work duration per set": 10, "rest duration per set": 5, "rounds": 3, "demo gif": "https://giphy.com"},
-                                    {"activity": "broad jumps", "repetition per set": 15, "work duration per set": 10, "rest duration per set": 5, "rounds": 3, "demo gif": "https://giphy.com"}
-                                ],
-                                "repeat": 3,
-                                "rest duration per set": 5
-                            },
-                            {"activity": "single leg bound", "repetition per set": 15, "work duration per set": 10, "rest duration per set": 5, "rounds": 3, "demo gif": "https://giphy.com"}
-                        ],
-                        "repeat": 3,
-                        "rest duration per set": 5
-                    }
+                    {"activity": "pullups", "repetition per set": 15, "work duration per set": 10, "rest duration per set": 5, "rounds": 3, "demo gif": "https://giphy.com"}
                 ]
             }
             with open(filename, "w") as f:
@@ -211,7 +186,7 @@ class WorkoutApp(tk.Tk):
                 with open(filename, "r") as f:
                     self.workout_data = json.load(f)
             except Exception as e:
-                messagebox.showerror("Error", f"Failed to parse JSON file: {e}")
+                messagebox.showerror("Error", f"Failed to parse JSON file {filename}: {e}")
                 self.workout_data = {"workout plan": []}
 
         def flatten_plan(activities):
@@ -241,6 +216,14 @@ class WorkoutApp(tk.Tk):
             workout.update(previous_workout)
 
         self.workout_data["workout plan"] = flattened_plan
+        self.engine = WorkoutStateMachine(self.workout_data)
+
+    def on_plan_selected(self, event):
+        """Fires dynamically when an idle dropdown choice switches to reload application assets."""
+        selected_file = self.cmb_plans.get()
+        if os.path.exists(selected_file):
+            self.load_workout_json(selected_file)
+            self.update_ui_display()
 
     def setup_styles(self):
         self.style = ttk.Style()
@@ -248,6 +231,7 @@ class WorkoutApp(tk.Tk):
         self.style.configure("TButton", font=("SF Pro Display", 12), padding=8)
         self.style.configure("Action.TButton", font=("SF Pro Display", 13, "bold"))
         self.style.configure("Horizontal.TProgressbar", thickness=12, background="#0A84FF", troughcolor="#E5E5EA")
+        self.style.configure("TCombobox", font=("SF Pro Display", 11), padding=4)
     def create_widgets(self):
         self.header_frame = tk.Frame(self, bg="#FFFFFF", height=50, relief="groove", borderwidth=1)
         self.header_frame.grid(row=0, column=0, sticky="ew")
@@ -258,6 +242,24 @@ class WorkoutApp(tk.Tk):
         
         self.display_frame = tk.Frame(self, bg="#F5F5F7")
         self.display_frame.grid(row=1, column=0, sticky="nsew", padx=25, pady=15)
+
+        # Dropdown Option Panel Frame Layout
+        self.selector_frame = tk.Frame(self.display_frame, bg="#F5F5F7")
+        self.selector_frame.pack(pady=5, fill="x")
+        
+        self.lbl_select = tk.Label(self.selector_frame, text="Choose Routine File:", font=("SF Pro Display", 11, "bold"), bg="#F5F5F7", fg="#515154")
+        self.lbl_select.pack(side="left", padx=5)
+
+        # Auto-scans file systems looking for target match extensions
+        found_plans = glob.glob("workout*.json")
+        if "workout.json" not in found_plans and os.path.exists("workout.json"):
+            found_plans.append("workout.json")
+        found_plans = sorted(list(set(found_plans)))
+        
+        self.cmb_plans = ttk.Combobox(self.selector_frame, values=found_plans, state="readonly", width=25)
+        self.cmb_plans.pack(side="left", padx=10)
+        self.cmb_plans.set("workout.json" if "workout.json" in found_plans else found_plans[0] if found_plans else "")
+        self.cmb_plans.bind("<<ComboboxSelected>>", self.on_plan_selected)
         
         self.lbl_exercise = tk.Label(self.display_frame, text="Ready to Start", font=("SF Pro Display", 22, "bold"), bg="#F5F5F7", fg="#1D1D1F")
         self.lbl_exercise.pack(pady=5)
@@ -303,12 +305,10 @@ class WorkoutApp(tk.Tk):
         if self.gif_loop_id:
             self.after_cancel(self.gif_loop_id)
             self.gif_loop_id = None
-            
         self.gif_frames.clear()
         self.gif_frames_delay.clear()
         self.gif_idx = 0
         self.loaded_gif_url = url
-        
         threading.Thread(target=self._async_gif_worker, args=(url,), daemon=True).start()
 
     def _async_gif_worker(self, url):
@@ -318,7 +318,6 @@ class WorkoutApp(tk.Tk):
             with urllib.request.urlopen(req, timeout=5) as response:
                 img_data = response.read()
             pil_img = Image.open(io.BytesIO(img_data))
-            
             temp_frames = []
             temp_delays = []
             try:
@@ -330,7 +329,6 @@ class WorkoutApp(tk.Tk):
                     pil_img.seek(pil_img.tell() + 1)
             except EOFError:
                 pass
-                
             self.after(0, lambda: self._finalize_gif_loading(temp_frames, temp_delays))
         except Exception as error_msg:
             print(f"Error streaming dynamic GIF media: {error_msg}")
@@ -355,6 +353,7 @@ class WorkoutApp(tk.Tk):
             if success:
                 self.timer_running = True
                 self.btn_skip.configure(state="normal")
+                self.cmb_plans.configure(state="disabled")  # Freezes selection interactions securely
                 if event:
                     self.announce_state(event)
                 self.run_loop()
@@ -386,6 +385,7 @@ class WorkoutApp(tk.Tk):
             self.gif_canvas.configure(image="", text="Finished!")
             self.btn_action.configure(text="Restart", style="Action.TButton")
             self.btn_skip.configure(state="disabled")
+            self.cmb_plans.configure(state="readonly")  # Automatically releases dropdown input locks
             self.progress_bar['value'] = 100
             messagebox.showinfo("Done!", "Awesome job! You finished the entire workout plan.")
             return
