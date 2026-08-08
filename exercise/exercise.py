@@ -129,7 +129,7 @@ class WorkoutApp(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Mac Workout Tracker")
-        self.geometry("550x850")  
+        self.geometry("550x880")  # Padded slightly for sound checkbox inclusions
         self.configure(bg="#F5F5F7")  
         
         self.grid_columnconfigure(0, weight=1)
@@ -263,7 +263,6 @@ class WorkoutApp(tk.Tk):
         state = self.engine.current_state
         flat_counter = 0
 
-        # Dynamic inner text layout tree generator
         def generate_blueprint_text(activities, level=0):
             nonlocal flat_counter
             summary = ""
@@ -280,15 +279,11 @@ class WorkoutApp(tk.Tk):
                     work = item.get("work duration per set", 0)
                     rest = item.get("rest duration per set", 0)
                     
-                    # Highlight evaluation if matching unrolled indices
                     is_active = (flat_counter == current_idx) and (state in ("WORK", "REST"))
                     prefix = "▶ [ACTIVE] " if is_active else "- "
                     line_text = f"{indent}{prefix}{name}: {sets} sets [W:{work}s / R:{rest}s]\n"
                     
-                    start_char = len(summary)
                     summary += line_text
-                    end_char = len(summary)
-                    
                     flat_counter += 1
             return summary
 
@@ -301,22 +296,29 @@ class WorkoutApp(tk.Tk):
         header += f"-----------------------------------\n"
         
         self.txt_preview.insert(tk.END, header)
-        body_text = generate_blueprint_text(raw_list)
-        self.txt_preview.insert(tk.END, body_text)
+        self.txt_preview.insert(tk.END, generate_blueprint_text(raw_list))
         
-        # Color accent current block text string coordinates
         self.txt_preview.tag_remove("active_highlight", "1.0", tk.END)
         idx_search = self.txt_preview.search("▶ [ACTIVE]", "1.0", tk.END)
         if idx_search:
-            line_end = f"{idx_search} lineend"
-            self.txt_preview.tag_add("active_highlight", idx_search, line_end)
+            self.txt_preview.tag_add("active_highlight", idx_search, f"{idx_search} lineend")
             self.txt_preview.tag_config("active_highlight", background="#0A84FF", foreground="#FFFFFF")
             self.txt_preview.see(idx_search)
 
         self.txt_preview.configure(state="disabled")
 
+    def trigger_countdown_audio(self, seconds_left):
+        """Uses native AppleScript system sound triggers for background beeps/chimes."""
+        if seconds_left in (3, 2, 1):
+            sound_name = "Hero"  # High-pitched beep for active tracking ticks
+            subprocess.Popen(["osascript", "-e", f'display notification with name "{sound_name}"'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            # Use fallback afplay pathing for absolute precision
+            subprocess.Popen(["afplay", f"/System/Library/Sounds/{sound_name}.aiff"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        elif seconds_left == 0:
+            sound_name = "Submarine"  # Deeper chime for transition hit points
+            subprocess.Popen(["afplay", f"/System/Library/Sounds/{sound_name}.aiff"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
     def toggle_preview_visibility(self):
-        """Collapses or expands the text preview viewport frame safely."""
         if self.var_hide_preview.get():
             self.txt_preview.pack_forget()
         else:
@@ -331,6 +333,10 @@ class WorkoutApp(tk.Tk):
         self.style.configure("TCombobox", font=("SF Pro Display", 11), padding=4)
         self.style.configure("TCheckbutton", font=("SF Pro Display", 11), background="#F5F5F7")
     def announce_state(self, event_type):
+        """Audibly speaks instructions via macOS text-to-speech if muting is unchecked."""
+        if self.var_mute_speech.get():
+            return  # Suppress speech logic block gracefully
+
         exercise = self.engine.get_current_exercise()
         exercise_name = exercise.get("activity", "Exercise") if exercise else ""
         repetition = exercise.get("repetition per set", 1) if exercise else 0
@@ -366,21 +372,25 @@ class WorkoutApp(tk.Tk):
         self.selector_frame = tk.Frame(self.display_frame, bg="#F5F5F7")
         self.selector_frame.pack(pady=4, fill="x")
         
-        self.lbl_select = tk.Label(self.selector_frame, text="Choose Routine:", font=("SF Pro Display", 11, "bold"), bg="#F5F5F7", fg="#515154")
-        self.lbl_select.pack(side="left", padx=5)
+        self.lbl_select = tk.Label(self.selector_frame, text="Routine:", font=("SF Pro Display", 11, "bold"), bg="#F5F5F7", fg="#515154")
+        self.lbl_select.pack(side="left", padx=2)
 
         sorted_aliases = sorted(list(self.alias_to_file.keys()))
-        self.cmb_plans = ttk.Combobox(self.selector_frame, values=sorted_aliases, state="readonly", width=20)
-        self.cmb_plans.pack(side="left", padx=5)
+        self.cmb_plans = ttk.Combobox(self.selector_frame, values=sorted_aliases, state="readonly", width=14)
+        self.cmb_plans.pack(side="left", padx=2)
         
         default_alias = self.file_to_alias.get("workout.json", sorted_aliases if sorted_aliases else "")
         self.cmb_plans.set(default_alias)
         self.cmb_plans.bind("<<ComboboxSelected>>", self.on_plan_selected)
         
-        # Hide Preview Checkbox Control Deck UI Element
         self.var_hide_preview = tk.BooleanVar(value=False)
         self.chk_hide_preview = ttk.Checkbutton(self.selector_frame, text="Hide Preview", variable=self.var_hide_preview, command=self.toggle_preview_visibility, style="TCheckbutton")
-        self.chk_hide_preview.pack(side="left", padx=5)
+        self.chk_hide_preview.pack(side="left", padx=4)
+
+        # Independent Mute Speech Announcements Toggle Switch Control 
+        self.var_mute_speech = tk.BooleanVar(value=False)
+        self.chk_mute_speech = ttk.Checkbutton(self.selector_frame, text="Mute Voice", variable=self.var_mute_speech, style="TCheckbutton")
+        self.chk_mute_speech.pack(side="left", padx=4)
         
         self.txt_preview = tk.Text(self.display_frame, height=5, bg="#FFFFFF", fg="#1D1D1F", font=("Courier", 11), relief="sunken", borderwidth=1)
         self.txt_preview.pack(pady=5, fill="x")
@@ -393,9 +403,9 @@ class WorkoutApp(tk.Tk):
 
         self.lbl_state = tk.Label(self.display_frame, text="IDLE", font=("SF Pro Display", 13, "bold"), bg="#F5F5F7", fg="#515154")
         self.lbl_state.pack(pady=4)
-
         self.gif_canvas = tk.Label(self.display_frame, bg="#E5E5EA", width=250, height=180, relief="sunken", borderwidth=1)
         self.gif_canvas.pack(pady=5)
+
         self.lbl_timer = tk.Label(self.display_frame, text="00:00", font=("SF Pro Display", 40, "bold"), bg="#F5F5F7", fg="#1D1D1F")
         self.lbl_timer.pack(pady=2)
 
@@ -498,13 +508,18 @@ class WorkoutApp(tk.Tk):
     def run_loop(self):
         if not self.timer_running:
             return
+        
+        # Fire structural alert checks prior to counting down ticks 
+        self.trigger_countdown_audio(self.engine.time_remaining)
+        
         transition_event = self.engine.tick()
         self.update_ui_display()
         if transition_event:
             self.announce_state(transition_event)
-            self.update_preview_panel()  # Refresh structural highlights on state shifts
+            self.update_preview_panel()  
         if self.engine.current_state == WorkoutStateMachine.STATE_COMPLETED:
             self.timer_running = False
+            self.trigger_countdown_audio(0)  # Fire terminal transition chime ring
             if self.gif_loop_id:
                 self.after_cancel(self.gif_loop_id)
             self.gif_canvas.configure(image="", text="Finished!")
