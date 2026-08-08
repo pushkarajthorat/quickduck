@@ -54,6 +54,7 @@ class WorkoutStateMachine:
         if exercise:
             self.current_state = self.STATE_REST
             self.time_remaining = exercise.get("rest duration per set", 0)
+
     def get_total_remaining_time(self):
         """Calculates dynamic total remaining time across all remaining blocks and rounds."""
         if self.current_state == self.STATE_COMPLETED:
@@ -124,11 +125,11 @@ class WorkoutStateMachine:
             self.current_state = self.STATE_COMPLETED
             return "COMPLETED"
 class WorkoutApp(tk.Tk):
-    """macOS optimized Tkinter Interface with Friendly Alias Selection & Voice Control."""
+    """macOS optimized Tkinter Interface with Friendly Alias Dropdown and History Loggers."""
     def __init__(self):
         super().__init__()
         self.title("Mac Workout Tracker")
-        self.geometry("550x940")  
+        self.geometry("550x940")  # Padded vertically to cleanly clear the contribution chart Canvas
         self.configure(bg="#F5F5F7")  
         
         self.grid_columnconfigure(0, weight=1)
@@ -230,10 +231,11 @@ class WorkoutApp(tk.Tk):
         cleaned_workout_dict = dict(self.workout_data)
         cleaned_workout_dict["workout plan"] = self.flattened_plan_cache
         self.engine = WorkoutStateMachine(cleaned_workout_dict)
+
     def announce_state(self, event_type):
         """Audibly speaks instructions via macOS text-to-speech if muting is unchecked."""
         if self.var_mute_speech.get():
-            return  
+            return
 
         exercise = self.engine.get_current_exercise()
         exercise_name = exercise.get("activity", "Exercise") if exercise else ""
@@ -250,7 +252,6 @@ class WorkoutApp(tk.Tk):
             text_to_speak = "Workout complete! Amazing job today."
         else:
             return
-
         try:
             subprocess.Popen(["say", text_to_speak], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         except Exception as error_msg:
@@ -263,7 +264,6 @@ class WorkoutApp(tk.Tk):
             self.load_workout_json(target_file)
             self.update_ui_display()
             self.update_preview_panel()
-
     def update_preview_panel(self):
         """Generates text blueprint with real-time running exercise highlight tags."""
         self.txt_preview.configure(state="normal")
@@ -306,13 +306,21 @@ class WorkoutApp(tk.Tk):
                     
                     is_active = (flat_counter == current_idx) and (state in ("WORK", "REST"))
                     prefix = "▶ [ACTIVE] " if is_active else "- "
-                    summary += f"{indent}{prefix}{name}: {sets} sets [W:{work}s / R:{rest}s]\n"
+                    line_text = f"{indent}{prefix}{name}: {sets} sets [W:{work}s / R:{rest}s]\n"
+                    
+                    summary += line_text
                     flat_counter += 1
             return summary
 
         raw_list = raw_data.get("workout plan", [])
-        tot_dur = self.engine.total_workout_duration
-        self.txt_preview.insert(tk.END, f"--- Routine Structure Breakdown ---\nActive Blocks: {len(self.flattened_plan_cache)} | Length: {tot_dur//60:02d}:{tot_dur%60:02d}\n-----------------------------------\n")
+        total_duration = self.engine.total_workout_duration
+        rem_min, rem_sec = total_duration // 60, total_duration % 60
+        
+        header = f"--- Routine Structure Breakdown ---\n"
+        header += f"Est. Active Blocks: {len(self.flattened_plan_cache)} | Total Length: {rem_min:02d}:{rem_sec:02d}\n"
+        header += f"-----------------------------------\n"
+        
+        self.txt_preview.insert(tk.END, header)
         self.txt_preview.insert(tk.END, generate_blueprint_text(raw_list))
         
         self.txt_preview.tag_remove("active_highlight", "1.0", tk.END)
@@ -321,16 +329,11 @@ class WorkoutApp(tk.Tk):
             self.txt_preview.tag_add("active_highlight", idx_search, f"{idx_search} lineend")
             self.txt_preview.tag_config("active_highlight", background="#0A84FF", foreground="#FFFFFF")
             self.txt_preview.see(idx_search)
+
         self.txt_preview.configure(state="disabled")
 
-    def trigger_countdown_audio(self, seconds_left):
-        """Triggers audio cues (Hero / Submarine) on the final 3 seconds and transit points."""
-        if seconds_left in (3, 2, 1):
-            subprocess.Popen(["afplay", "/System/Library/Sounds/Hero.aiff"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        elif seconds_left == 0:
-            subprocess.Popen(["afplay", "/System/Library/Sounds/Submarine.aiff"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     def log_completed_workout(self):
-        """Saves workout completion logs onto disk database file."""
+        """Saves dynamic workout completion indicators permanently onto local tracker disk files."""
         history_file = "workout_history.json"
         history_data = {}
         if os.path.exists(history_file):
@@ -342,18 +345,38 @@ class WorkoutApp(tk.Tk):
 
         now = datetime.now()
         date_str = now.strftime("%Y-%m-%d")
+        timestamp_str = now.strftime("%I:%M:%S %p")
+        alias_name = self.workout_data.get("alias", "Unknown Workout")
+
         if date_str not in history_data:
             history_data[date_str] = []
         
-        history_data[date_str].append({"alias": self.workout_data.get("alias", "Unknown Routine"), "time": now.strftime("%I:%M:%S %p")})
+        history_data[date_str].append({
+            "alias": alias_name,
+            "time": timestamp_str
+        })
+
         try:
             with open(history_file, "w") as f:
                 json.dump(history_data, f, indent=4)
         except Exception as err:
-            print(f"Failed to record marker: {err}")
+            print(f"Failed to record metric markers: {err}")
 
+    def trigger_countdown_audio(self, seconds_left):
+        if seconds_left in (3, 2, 1):
+            sound_name = "Hero"
+            subprocess.Popen(["afplay", f"/System/Library/Sounds/{sound_name}.aiff"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        elif seconds_left == 0:
+            sound_name = "Submarine"
+            subprocess.Popen(["afplay", f"/System/Library/Sounds/{sound_name}.aiff"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    def toggle_preview_visibility(self):
+        if self.var_hide_preview.get():
+            self.txt_preview.pack_forget()
+        else:
+            self.txt_preview.pack(pady=5, fill="x", after=self.selector_frame)
     def render_github_heatmap(self):
-        """Draws a 20-week matrix grid on canvas representing workout completions."""
+        """Draws a 20-week matrix representation grid layout representing logged workout metrics."""
         self.canvas_git.delete("all")
         history_file = "workout_history.json"
         history_data = {}
@@ -364,61 +387,60 @@ class WorkoutApp(tk.Tk):
             except Exception:
                 history_data = {}
 
+        # Configure matrix dimensional boundaries (7 rows representing days x 20 columns representing weeks)
         rows, cols = 7, 20
         box_size, padding = 11, 3
         start_x, start_y = 15, 5
+        
+        # Self-adjusting timeline coordinates mapping reverse-offsets backwards into history paths
         today = datetime.now().date()
-        grid_start_date = today - timedelta(days=(cols - 1) * 7 + today.weekday())
-        self.heatmap_boxes = {}
+        start_day_offset = today.weekday()  # Monday=0, Sunday=6
+        grid_start_date = today - timedelta(days=(cols - 1) * 7 + start_day_offset)
+        
+        self.heatmap_boxes = {} # Stores hover boundaries securely
 
         for c in range(cols):
             for r in range(rows):
                 target_date = grid_start_date + timedelta(weeks=c, days=r)
                 date_str = target_date.strftime("%Y-%m-%d")
+                
+                # Check active workout volume indices for custom color tone saturation layers
                 completions = history_data.get(date_str, [])
                 count = len(completions)
                 
                 if target_date > today:
-                    color = "#F5F5F7"
+                    color = "#F5F5F7" # Empty bounds safety lock
                 elif count == 0:
-                    color = "#E5E5EA"
+                    color = "#E5E5EA" # Neutral grey baseline color tint
                 elif count == 1:
-                    color = "#34C759"
+                    color = "#34C759" # Bright vibrant grass-green hue accent
                 else:
-                    color = "#248A3D"
+                    color = "#248A3D" # Dark deep forest-green accent layer
                     
                 x1 = start_x + (c * (box_size + padding))
                 y1 = start_y + (r * (box_size + padding))
-                rect_id = self.canvas_git.create_rectangle(x1, y1, x1+box_size, y1+box_size, fill=color, outline="#FFFFFF", width=1)
+                x2 = x1 + box_size
+                y2 = y1 + box_size
+                
+                rect_id = self.canvas_git.create_rectangle(x1, y1, x2, y2, fill=color, outline="#FFFFFF", width=1)
                 self.heatmap_boxes[rect_id] = {"date": date_str, "completions": completions}
 
     def on_heatmap_hover(self, event):
+        """Triggers clear explicit floating tooltip box coordinates on item target bounding boxes."""
         canvas_item = self.canvas_git.find_withtag("current")
-        if not canvas_item or canvas_item not in self.heatmap_boxes:
+        if not canvas_item or canvas_item[0] not in self.heatmap_boxes:
             self.lbl_tooltip.configure(text="Hover over items to view timeline records")
             return
-        box_meta = self.heatmap_boxes[canvas_item]
+            
+        box_meta = self.heatmap_boxes[canvas_item[0]]
         completions = box_meta["completions"]
+        
         if not completions:
             self.lbl_tooltip.configure(text=f"No sessions completed on {box_meta['date']}")
         else:
-            summary = "; ".join([f"{item['alias']} at {item['time']}" for item in completions])
-            self.lbl_tooltip.configure(text=f"[{box_meta['date']}] ({len(completions)}): {summary}")
+            summary_runs = "; ".join([f"{item['alias']} at {item['time']}" for item in completions])
+            self.lbl_tooltip.configure(text=f"[{box_meta['date']}] Total Run ({len(completions)}): {summary_runs}")
 
-    def toggle_preview_visibility(self):
-        if self.var_hide_preview.get():
-            self.txt_preview.pack_forget()
-        else:
-            self.txt_preview.pack(pady=5, fill="x", after=self.selector_frame)
-
-    def setup_styles(self):
-        self.style = ttk.Style()
-        self.style.theme_use("clam")
-        self.style.configure("TButton", font=("SF Pro Display", 12), padding=8)
-        self.style.configure("Action.TButton", font=("SF Pro Display", 13, "bold"))
-        self.style.configure("Horizontal.TProgressbar", thickness=12, background="#0A84FF", troughcolor="#E5E5EA")
-        self.style.configure("TCombobox", font=("SF Pro Display", 11), padding=4)
-        self.style.configure("TCheckbutton", font=("SF Pro Display", 11), background="#F5F5F7")
     def create_widgets(self):
         self.header_frame = tk.Frame(self, bg="#FFFFFF", height=50, relief="groove", borderwidth=1)
         self.header_frame.grid(row=0, column=0, sticky="ew")
@@ -433,19 +455,24 @@ class WorkoutApp(tk.Tk):
         self.selector_frame = tk.Frame(self.display_frame, bg="#F5F5F7")
         self.selector_frame.pack(pady=4, fill="x")
         
-        tk.Label(self.selector_frame, text="Routine:", font=("SF Pro Display", 11, "bold"), bg="#F5F5F7", fg="#515154").pack(side="left", padx=2)
+        self.lbl_select = tk.Label(self.selector_frame, text="Routine:", font=("SF Pro Display", 11, "bold"), bg="#F5F5F7", fg="#515154")
+        self.lbl_select.pack(side="left", padx=2)
+
         sorted_aliases = sorted(list(self.alias_to_file.keys()))
         self.cmb_plans = ttk.Combobox(self.selector_frame, values=sorted_aliases, state="readonly", width=14)
         self.cmb_plans.pack(side="left", padx=2)
-        self.cmb_plans.set(self.file_to_alias.get("workout.json", sorted_aliases if sorted_aliases else ""))
+        
+        default_alias = self.file_to_alias.get("workout.json", sorted_aliases if sorted_aliases else "")
+        self.cmb_plans.set(default_alias)
         self.cmb_plans.bind("<<ComboboxSelected>>", self.on_plan_selected)
         
         self.var_hide_preview = tk.BooleanVar(value=False)
-        ttk.Checkbutton(self.selector_frame, text="Hide Preview", variable=self.var_hide_preview, command=self.toggle_preview_visibility, style="TCheckbutton").pack(side="left", padx=4)
+        self.chk_hide_preview = ttk.Checkbutton(self.selector_frame, text="Hide Preview", variable=self.var_hide_preview, command=self.toggle_preview_visibility, style="TCheckbutton")
+        self.chk_hide_preview.pack(side="left", padx=4)
 
         self.var_mute_speech = tk.BooleanVar(value=False)
-        ttk.Checkbutton(self.selector_frame, text="Mute Voice", variable=self.var_mute_speech, style="TCheckbutton").pack(side="left", padx=4)
-        
+        self.chk_mute_speech = ttk.Checkbutton(self.selector_frame, text="Mute Voice", variable=self.var_mute_speech, style="TCheckbutton")
+        self.chk_mute_speech.pack(side="left", padx=4)
         self.txt_preview = tk.Text(self.display_frame, height=5, bg="#FFFFFF", fg="#1D1D1F", font=("Courier", 11), relief="sunken", borderwidth=1)
         self.txt_preview.pack(pady=5, fill="x")
         
@@ -476,6 +503,7 @@ class WorkoutApp(tk.Tk):
         self.progress_bar = ttk.Progressbar(self.display_frame, orient="horizontal", length=320, mode="determinate", style="Horizontal.TProgressbar")
         self.progress_bar.pack(pady=4)
 
+        # Contribution metrics display canvas section
         self.canvas_git = tk.Canvas(self.display_frame, width=300, height=105, bg="#FFFFFF", relief="solid", borderwidth=1)
         self.canvas_git.pack(pady=4)
         self.canvas_git.bind("<Motion>", self.on_heatmap_hover)
@@ -580,7 +608,7 @@ class WorkoutApp(tk.Tk):
         if self.engine.current_state == WorkoutStateMachine.STATE_COMPLETED:
             self.timer_running = False
             self.trigger_countdown_audio(0)  
-            self.log_completed_workout() 
+            self.log_completed_workout() # Fire historical persistent file recording updates 
             if self.gif_loop_id:
                 self.after_cancel(self.gif_loop_id)
             self.gif_canvas.configure(image="", text="Finished!")
@@ -589,7 +617,7 @@ class WorkoutApp(tk.Tk):
             self.cmb_plans.configure(state="readonly")  
             self.progress_bar['value'] = 100
             self.update_preview_panel()
-            self.render_github_heatmap() 
+            self.render_github_heatmap() # Redraw contribution tiles
             messagebox.showinfo("Done!", "Awesome job! You finished the entire workout plan.")
             return
         self.after(1000, self.run_loop)
@@ -597,28 +625,37 @@ class WorkoutApp(tk.Tk):
     def update_ui_display(self):
         state = self.engine.current_state
         exercise = self.engine.get_current_exercise()
-        self.lbl_timer.configure(text=f"{self.engine.time_remaining//60:02d}:{self.engine.time_remaining%60:02d}")
+
+        minutes = self.engine.time_remaining // 60
+        seconds = self.engine.time_remaining % 60
+        self.lbl_timer.configure(text=f"{minutes:02d}:{seconds:02d}")
         self.lbl_state.configure(text=state)
+
         total_rem = self.engine.get_total_remaining_time()
-        self.lbl_total_remaining.configure(text=f"Total Remaining: {total_rem//60:02d}:{total_rem%60:02d}")
+        rem_min, rem_sec = total_rem // 60, total_rem % 60
+        self.lbl_total_remaining.configure(text=f"Total Remaining: {rem_min:02d}:{rem_sec:02d}")
 
         if total_rem > 0 and state != WorkoutStateMachine.STATE_COMPLETED:
             est_time = datetime.now() + timedelta(seconds=total_rem)
             self.lbl_est_completion.configure(text=f"Est. Completion: {est_time.strftime('%I:%M:%S %p')}")
-            progress_pct = ((self.engine.total_workout_duration - total_rem) / self.engine.total_workout_duration) * 100 if self.engine.total_workout_duration > 0 else 0
+            
+            total_dur = self.engine.total_workout_duration
+            progress_pct = ((total_dur - total_rem) / total_dur) * 100 if total_dur > 0 else 0
             self.progress_bar['value'] = progress_pct
         else:
             self.lbl_est_completion.configure(text="Est. Completion: --:--")
             self.progress_bar['value'] = 0 if state == WorkoutStateMachine.STATE_IDLE else 100
+
         if exercise:
             self.lbl_exercise.configure(text=exercise.get("activity", "Unknown"))
             reps = exercise.get("repetition per set", "--")
             self.lbl_reps.configure(text=f"Reps per set: {reps}" if reps != "--" else "Reps per set: --")
             self.lbl_round.configure(text=f"Round: {self.engine.current_round} / {exercise.get('rounds', 1)}")
+            
             gif_url = exercise.get("demo gif", exercise.get("gif", None))
-        if gif_url and self.loaded_gif_url != gif_url:
-            self.gif_canvas.configure(image="", text="Loading demonstration...")
-            self.after(10, lambda: self.download_and_parse_gif(gif_url))
+            if gif_url and self.loaded_gif_url != gif_url:
+                self.gif_canvas.configure(image="", text="Loading demonstration...")
+                self.after(10, lambda: self.download_and_parse_gif(gif_url))
         else:
             self.lbl_exercise.configure(text="Ready to Start" if state == WorkoutStateMachine.STATE_IDLE else "Workout Complete!")
             self.lbl_reps.configure(text="Reps per set: --")
@@ -632,7 +669,18 @@ class WorkoutApp(tk.Tk):
             self.btn_action.configure(text="Start Plan")
         elif state == WorkoutStateMachine.STATE_COMPLETED:
             self.lbl_state.configure(fg="#0A84FF")
+
+
+    def setup_styles(self):
+        self.style = ttk.Style()
+        self.style.theme_use("clam")
+        self.style.configure("TButton", font=("SF Pro Display", 12), padding=8)
+        self.style.configure("Action.TButton", font=("SF Pro Display", 13, "bold"))
+        self.style.configure("Horizontal.TProgressbar", thickness=12, background="#0A84FF", troughcolor="#E5E5EA")
+        self.style.configure("TCombobox", font=("SF Pro Display", 11), padding=4)
+        self.style.configure("TCheckbutton", font=("SF Pro Display", 11), background="#F5F5F7")
+        
+
 if __name__ == "__main__":
     app = WorkoutApp()
     app.mainloop()
-    
