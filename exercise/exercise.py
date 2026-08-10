@@ -204,16 +204,16 @@ class WorkoutApp(tk.Tk):
         def flatten_plan(activities):
             flat_list = []
             for item in activities:
-                if "compound activity" in item:
-                    nested_flattened = flatten_plan(item["compound activity"])
+                if "superset activity" in item:
+                    nested_flattened = flatten_plan(item["superset activity"])
                     repeats = item.get("repeat", 1)
-                    compound_rest = item.get("rest duration per set", 0)
+                    superset_rest = item.get("rest duration per set", 0)
                     
                     for r in range(repeats):
                         for sub_idx, sub_item in enumerate(nested_flattened):
                             cloned_item = dict(sub_item)
-                            if sub_idx == len(nested_flattened) - 1 and compound_rest > 0:
-                                cloned_item["rest duration per set"] = sub_item.get("rest duration per set", 0) + compound_rest
+                            if sub_idx == len(nested_flattened) - 1 and superset_rest > 0:
+                                cloned_item["rest duration per set"] = sub_item.get("rest duration per set", 0) + superset_rest
                             flat_list.append(cloned_item)
                 else:
                     flat_list.append(dict(item))
@@ -243,9 +243,9 @@ class WorkoutApp(tk.Tk):
         if event_type == "START_WORK":
             text_to_speak = f"Do {repetition} {exercise_name} " if repetition > 1 else f"Do {exercise_name} "
         elif event_type == "START_ROUND":
-            text_to_speak = f"Round {self.engine.current_round}. Begin {exercise_name}."
+            text_to_speak = f"Round {self.engine.current_round}." + f"Do {repetition} {exercise_name} " if repetition > 1 else f"Do {exercise_name} "
         elif event_type == "START_REST":
-            text_to_speak = "Time to rest. Take a break."
+            text_to_speak = "take rest"
         elif event_type == "COMPLETED":
             text_to_speak = "Workout complete! Amazing job today."
         else:
@@ -293,11 +293,11 @@ class WorkoutApp(tk.Tk):
             summary = ""
             indent = "  " * level
             for item in activities:
-                if "compound activity" in item:
+                if "superset activity" in item:
                     repeats = item.get("repeat", 1)
                     comp_rest = item.get("rest duration per set", 0)
-                    summary += f"{indent}• [Compound] Repeat x{repeats} (Rest: {comp_rest}s):\n"
-                    summary += generate_blueprint_text(item["compound activity"], level + 1)
+                    summary += f"{indent}• [Superset] Repeat x{repeats} (Rest: {comp_rest}s):\n"
+                    summary += generate_blueprint_text(item["superset activity"], level + 1)
                 else:
                     name = item.get("activity", "Unknown")
                     sets = item.get("rounds", 1)
@@ -312,7 +312,7 @@ class WorkoutApp(tk.Tk):
 
         raw_list = raw_data.get("workout plan", [])
         tot_dur = self.engine.total_workout_duration
-        self.txt_preview.insert(tk.END, f"--- Routine Blueprint Summary ---\nActive Blocks: {len(self.flattened_plan_cache)} | Length: {tot_dur//60:02d}:{tot_dur%60:02d}\n---------------------------------\n")
+        self.txt_preview.insert(tk.END, f"--- Summary ---\nActive Blocks: {len(self.flattened_plan_cache)} | Length: {tot_dur//60:02d}:{tot_dur%60:02d}\n---------------------------------\n")
         self.txt_preview.insert(tk.END, generate_blueprint_text(raw_list))
         
         self.txt_preview.tag_remove("active_highlight", "1.0", tk.END)
@@ -325,7 +325,7 @@ class WorkoutApp(tk.Tk):
     def trigger_countdown_audio(self, seconds_left):
         """Triggers audio cues (Hero / Submarine) on the final 3 seconds and transit points."""
         if seconds_left in (3, 2, 1):
-            subprocess.Popen(["afplay", "/System/Library/Sounds/Hero.aiff"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.Popen(["afplay", "/System/Library/Sounds/Tink.aiff"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         elif seconds_left == 0:
             subprocess.Popen(["afplay", "/System/Library/Sounds/Submarine.aiff"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
