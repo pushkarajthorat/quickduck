@@ -1,0 +1,47 @@
+{
+  "workout plan": [
+    { "activity": "neck rotation - clockwise", "repetition per set": 1, "work duration per set": 20, "rest duration per set": 0, "rounds": 1, "demo gif": "" },
+    { "activity": "neck rotation - clockwise", "repetition per set": 1, "work duration per set": 20, "rest duration per set": 0, "rounds": 1, "demo gif": "" },
+    { "activity": "neck rotation - anticlockwise", "repetition per set": 1, "work duration per set": 20, "rest duration per set": 0, "rounds": 1, "demo gif": "" },
+    { "activity": "Triangle stretch", "demo gif": "https://media.post.rvohealth.io/wp-content/uploads/sites/2/2019/05/TRIANGLE2121212121.jpg" },
+    { "activity": "Triangle stretch", "demo gif": "https://media.post.rvohealth.io/wp-content/uploads/sites/2/2019/05/TRIANGLE2121212121.jpg" },
+    { "activity": "Wall calf stretch", "demo gif": "https://media.post.rvohealth.io/wp-content/uploads/sites/2/2019/05/wall-calf-stretch-.gif" },
+
+    
+    { "activity":"Walking knee hug", "demo gif": "https://media.post.rvohealth.io/wp-content/uploads/sites/2/2019/05/KNEEHUG.gif"},
+    { "activity":"Child’s Pose", "demo gif": "https://media.post.rvohealth.io/wp-content/uploads/sites/2/2019/05/CHILDSPOSE.jpg"},
+    { "activity":"Three-legged Down Dog with hip stretch", "demo gif": "https://media.post.rvohealth.io/wp-content/uploads/sites/2/2019/05/DOWNWARD-DOG-LEG-.gif"},
+    { "activity":"Lunge with a twist", "demo gif": "https://media.post.rvohealth.io/wp-content/uploads/sites/2/2019/05/TRIANGLE20STRETCH.gif"},
+
+    { "activity": "squats", "repetition per set": 15, "work duration per set": 60, "rest duration per set": 60, "rounds": 3, "demo gif": "https://hips.hearstapps.com/hmg-prod/images/workouts/2017/04/barbellsquat-1491916408.gif" },
+
+
+
+    { "activity": "squats", "repetition per set": 15, "work duration per set": 60, "rest duration per set": 60, "rounds": 3, "demo gif": "https://hips.hearstapps.com/hmg-prod/images/workouts/2017/04/barbellsquat-1491916408.gif" },
+    { "activity": "bridge", "repetition per set": 15, "work duration per set": 60, "rest duration per set": 60, "rounds": 3, "demo gif": "https://www.strengthlog.com/wp-content/uploads/2025/09/glutebridge.gif" },
+    { "activity": "alternate lunges", "repetition per set": 15, "work duration per set": 60, "rest duration per set": 60, "rounds": 3, "demo gif": "https://media.tenor.com/-YiEMDDCOwoAAAAM/afundo.gif" },
+    
+    { "activity": "rest", "repetition per set": 1, "work duration per set": 30, "rest duration per set": 30, "rounds": 1, "demo gif": "https://i0.wp.com/images-prod.healthline.com/hlcmsresource/images/topic_centers/Fitness-Exercise/648x364_5_Glute_Bridge_Variations_One_Legged_Glute_Bridge.gif?w=1155&h=764" },
+    
+    { "activity": "sumo squats", "repetition per set": 15, "work duration per set": 60, "rest duration per set": 60, "rounds": 3, "demo gif": "https://i.pinimg.com/originals/19/5b/a7/195ba798f4246ae9930a97ea2e084aae.gif" },
+    { "activity": "right leg bridge", "repetition per set": 1, "work duration per set": 60, "rest duration per set": 60, "rounds": 1, "demo gif": "https://i0.wp.com/images-prod.healthline.com/hlcmsresource/images/topic_centers/Fitness-Exercise/648x364_5_Glute_Bridge_Variations_One_Legged_Glute_Bridge.gif?w=1155&h=764" },
+    { "activity": "left leg bridge", "repetition per set": 1, "work duration per set": 60, "rest duration per set": 60, "rounds": 1, "demo gif": "https://i0.wp.com/images-prod.healthline.com/hlcmsresource/images/topic_centers/Fitness-Exercise/648x364_5_Glute_Bridge_Variations_One_Legged_Glute_Bridge.gif?w=1155&h=764" },
+    { "activity": "jumping lunges", "repetition per set": 15, "work duration per set": 60, "rest duration per set": 60, "rounds": 3, "demo gif": "https://i0.wp.com/www.strengthlog.com/wp-content/uploads/2024/01/jumping-lunges.gif?fit=600%2C600&ssl=1" },
+
+    { "activity": "rest", "repetition per set": 1, "work duration per set": 30, "rest duration per set": 30, "rounds": 1, "demo gif": "https://i0.wp.com/images-prod.healthline.com/hlcmsresource/images/topic_centers/Fitness-Exercise/648x364_5_Glute_Bridge_Variations_One_Legged_Glute_Bridge.gif?w=1155&h=764" },
+
+    { "activity": "jumping squats", "repetition per set": 15, "work duration per set": 60, "rest duration per set": 60, "rounds": 3, "demo gif": "https://media.tenor.com/KTAavalOAWQAAAAM/squat-jumps.gif" },
+    { "activity": "side lunges", "repetition per set": 15, "work duration per set": 60, "rest duration per set": 60, "rounds": 3, "demo gif": "https://cdn.shopify.com/s/files/1/0449/8453/3153/files/Side_Lunges.webp?v=1732776676" },
+    { "activity": "alternate calf raises", "repetition per set": 15, "work duration per set": 60, "rest duration per set": 60, "rounds": 3, "demo gif": "https://i.pinimg.com/originals/b2/9c/f5/b29cf50d50e7f25493fab0ce541bb12b.gif" },
+    
+    { "activity": "rest", "repetition per set": 1, "work duration per set": 30, "rest duration per set": 30, "rounds": 1, "demo gif": "https://i0.wp.com/images-prod.healthline.com/hlcmsresource/images/topic_centers/Fitness-Exercise/648x364_5_Glute_Bridge_Variations_One_Legged_Glute_Bridge.gif?w=1155&h=764" },
+    
+    { "_comment": "https://greatist.com/fitness/stretching-exercises-lower-body-stretches#cooldown-exercises",
+      "activity": "standing wall calf stretches", "repetition per set": 15, "work duration per set": 60, "rest duration per set": 0, "rounds": 1, "demo gif": "https://i.pinimg.com/originals/93/7d/d7/937dd77b8c95826c3033a14c9e60e9bc.gif" },
+    { "activity": "hamstring scoop stretches", "repetition per set": 15, "work duration per set": 60, "rest duration per set": 0, "rounds": 1, "demo gif": "https://i.makeagif.com/media/4-17-2021/XL1T-k.gif" },
+    { "activity": "Cross Over Hamstring Stretch", "repetition per set": 15, "work duration per set": 60, "rest duration per set": 0, "rounds": 1, "demo gif": "https://i.pinimg.com/originals/82/15/5c/82155c3bd7cf62cf9476d147db522474.gif" },
+    { "activity": "Quad stretch from lunge", "repetition per set": 15, "work duration per set": 60, "rest duration per set": 0, "rounds": 1, "demo gif": "https://i.pinimg.com/originals/82/15/5c/82155c3bd7cf62cf9476d147db522474.gif" },
+
+    { "activity": "DONE", "repetition per set": 15, "work duration per set": 60, "rest duration per set": 0, "rounds": 1, "demo gif": "https://i.pinimg.com/originals/82/15/5c/82155c3bd7cf62cf9476d147db522474.gif" }
+  ]
+}

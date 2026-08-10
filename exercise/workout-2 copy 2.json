@@ -1,0 +1,93 @@
+
+{
+  "workout plan": [
+    { "activity": "neck rotation clockwise", "repetition per set": 1, "work duration per set": 20, "rest duration per set": 0, "rounds": 1, "demo gif": "https://cdn.dribbble.com/userupload/26232160/file/original-9454598afb72df3824f1f3967fae974c.gif" },
+    { "activity": "neck rotation anti clockwise" },
+    { "activity": "neck look up and down" },
+    { "activity": "neck side ways stretching" },
+    { "activity": "neck touch ear to shoulder" },
+
+    { "activity": "Push Neck on left", "work duration per set": 15 },
+    { "activity": "Push Neck on Right" },
+    { "activity": "Push Neck on Front" },
+    { "activity": "Push Neck on back" },
+
+    { "activity": "hands out power fingers","work duration per set": 20 },
+    { "activity": "close your fingers and wrist rotate clockwise" },
+    { "activity": "anticlockwise" },
+    { "activity": "fingers stretch backwards" },
+
+    { "activity": "virtual pull arms" },
+    { "activity": "virtual push arms" },
+
+    { "activity": "rotate arms clockwise" },
+    { "activity": "anti clockwise" },
+
+    { "activity": "triceps stretch, vertically" },
+    { "activity": "triceps stretch, horizontally" },
+    { "activity": "Pectoral stretch left hand" },
+    { "activity": "Pectoral stretch right hand" },
+
+    { "activity": "chest opener swing both hands backwards" },
+    { "activity": "chest opener swing both hands upwards" },
+
+    { "activity": "hands out and make small circles" },
+    { "activity": "anti clockwise" },
+
+    { "activity": "hands out and try to fly" },
+    { "activity": "hands out and rotate right and left from hips" },
+
+    { "activity": "lock fingures stretch hands up wards bend to right" },
+    { "activity": "bend to left" },
+
+    { "activity": "hip rotation clockwise" },
+    { "activity": "hip rotation anti-clockwise" },
+
+    { "activity": "standing left leg circles clockwise", "repetition per set": 1, "work duration per set": 20, "rest duration per set": 0, "rounds": 1 },
+    { "activity": "anti clockwise" },
+    { "activity": "standing right leg circles clockwise" },
+    { "activity": "anti clockwise" },
+
+    { "activity": "bend down hands out and swing left and right", "repetition per set": 1, "work duration per set": 40, "rest duration per set": 0, "rounds": 1 },
+
+    { "activity": "4 feet distance between legs, both hands touch to feet, elbows touch to floor, hands stretch backward, hands on hips and bend backwards", "repetition per set": 1, "work duration per set": 40, "rest duration per set": 0, "rounds": 1 },
+
+    { "activity": "standing hamstring stretch" },
+    { "activity": "other leg" },
+
+    { "activity": "right hand on hip left hand up air bend right from hips", "repetition per set": 1, "work duration per set": 5, "rest duration per set": 0, "rounds": 1 },
+    { "activity": "left hand on hip right hand up air bend left from hips", "repetition per set": 1, "work duration per set": 5, "rest duration per set": 0, "rounds": 1 },
+
+    { "activity": "right foot in right hand touch floor by left hand", "repetition per set": 1, "work duration per set": 20, "rest duration per set": 0, "rounds": 1 },
+    { "activity": "other way" },
+
+    { "activity": "hands on knees, join knees and rotate knees clockwise" },
+    { "activity": "other way" },
+
+    { "activity": "hamstring scoop stretch - right leg" },
+    { "activity": "hamstring scoop stretch - left leg" },
+
+    { "activity": "rotate right toe" },
+    { "activity": "rotate left toe" },
+    { "activity": "left foot in hands pull upwards" },
+    { "activity": "right foot in hands pull upwards" },
+    { "activity": "sit down, butterfly" },
+    
+    { "activity": "lock fingers pull left leg up like pacify baby" },
+    { "activity": "other leg" },
+
+    { "activity": "90 by 90 stretch" },
+    
+    { "activity": "left leg straight, right heel touching groins touch feet by hands" },
+    { "activity": "other leg" },
+
+    { "activity": "legs straight, touch head to knees, hands to toes" },
+    { "activity": "Supta Matsyendrasana - left side" },
+    { "activity": "Supta Matsyendrasana - right side" },
+
+    { "activity": "get ready for further exercise" },
+
+    { "activity": "DONE", "repetition per set": 0, "work duration per set": 0, "rest duration per set": 0, "rounds": 1, "demo gif": "https://media4.giphy.com/media/v1.Y2lkPTZjMDliOTUybXM2dHFoazUzN3Jva2l1d242NjlkM3U3dW81cWQzZjl2Z3k4MXBmYSZlcD12MV9naWZzX3NlYXJjaCZjdD1n/Z78HK8lQ2cSljuwnnm/giphy.gif" }
+
+  ]
+}
