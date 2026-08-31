@@ -32,8 +32,8 @@ class HIITAndroidApp(MDApp):
         # Default Plan Template Data Schema Mapping
         self.workout_data = {
             "workout plan": [
-                {"activity": "Pushups", "repetition per set": 15, "work duration per set": 10, "rest duration per set": 5, "rounds": 3},
-                {"activity": "Pullups", "repetition per set": 12, "work duration per set": 10, "rest duration per set": 5, "rounds": 3}
+                {"activity": "Pushups", "reps": 15, "work duration per set": 10, "rest duration per set": 5, "rounds": 3},
+                {"activity": "Pullups", "reps": 12, "work duration per set": 10, "rest duration per set": 5, "rounds": 3}
             ],
             "alias": "Default General Routine"
         }
@@ -122,7 +122,7 @@ class HIITAndroidApp(MDApp):
         """Assembles dynamic string data contexts to pass to the voice feedback layer."""
         exercise = self.engine.get_current_exercise()
         exercise_name = exercise.get("activity", "Exercise") if exercise else ""
-        repetition = exercise.get("repetition per set", 1) if exercise else 0
+        repetition = exercise.get("reps", 1) if exercise else 0
 
         if event_type == "START_WORK":
             text = f"Do {repetition} {exercise_name}"
@@ -156,7 +156,7 @@ class HIITAndroidApp(MDApp):
 
         if exercise:
             ids.lbl_exercise.text = exercise.get("activity", "Unknown")
-            ids.lbl_reps.text = f"Reps per set: {exercise.get('repetition per set', '--')}"
+            ids.lbl_reps.text = f"Reps per set: {exercise.get('reps', '--')}"
             ids.lbl_round.text = f"Round: {self.engine.current_round} / {exercise.get('rounds', 1)}"
         else:
             ids.lbl_exercise.text = "Workout Complete!" if state == WorkoutStateMachine.STATE_COMPLETED else "Ready to Start"

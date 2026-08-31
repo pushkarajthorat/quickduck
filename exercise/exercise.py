@@ -30,7 +30,7 @@ class WorkoutStateMachine:
         
     def calculate_initial_total(self):
         """Calculates total fixed duration of the plan at launch."""
-        return sum((ex.get("work duration per set", 0) + ex.get("rest duration per set", 0)) * ex.get("rounds", 1) for ex in self.plan)
+        return sum((ex.get("work", 0) + ex.get("rest", 0)) * ex.get("rounds", 1) for ex in self.plan)
 
     def get_current_exercise(self):
         if 0 <= self.current_exercise_idx < len(self.plan):
@@ -50,13 +50,13 @@ class WorkoutStateMachine:
         exercise = self.get_current_exercise()
         if exercise:
             self.current_state = self.STATE_WORK
-            self.time_remaining = exercise.get("work duration per set", 0)
+            self.time_remaining = exercise.get("work", 0)
 
     def transition_to_rest(self):
         exercise = self.get_current_exercise()
         if exercise:
             self.current_state = self.STATE_REST
-            self.time_remaining = exercise.get("rest duration per set", 0)
+            self.time_remaining = exercise.get("rest", 0)
     def get_total_remaining_time(self):
         """Calculates dynamic total remaining time across all remaining blocks and rounds."""
         if self.current_state == self.STATE_COMPLETED:
@@ -68,8 +68,8 @@ class WorkoutStateMachine:
         for idx, ex in enumerate(self.plan):
             if idx < self.current_exercise_idx:
                 continue
-            work = ex.get("work duration per set", 0)
-            rest = ex.get("rest duration per set", 0)
+            work = ex.get("work", 0)
+            rest = ex.get("rest", 0)
             rounds = ex.get("rounds", 1)
             
             if idx == self.current_exercise_idx:
@@ -187,8 +187,8 @@ class WorkoutApp(tk.Tk):
         if not filename or (filename == "workout.json" and not os.path.exists(filename)):
             self.workout_data = {
                 "workout plan": [
-                    {"activity": "Pushups", "repetition per set": 15, "work duration per set": 10, "rest duration per set": 5, "rounds": 3, "demo gif": "https://giphy.com"},
-                    {"activity": "pullups", "repetition per set": 15, "work duration per set": 10, "rest duration per set": 5, "rounds": 3, "demo gif": "https://giphy.com"}
+                    {"exercise": "Pushups", "reps": 15, "work": 10, "rest": 5, "rounds": 3, "demo": "https://giphy.com"},
+                    {"exercise": "pullups", "reps": 15, "work": 10, "rest": 5, "rounds": 3, "demo": "https://giphy.com"}
                 ],
                 "alias": "Default General Routine"
             }
@@ -207,16 +207,16 @@ class WorkoutApp(tk.Tk):
         def flatten_plan(activities):
             flat_list = []
             for item in activities:
-                if "superset activity" in item:
-                    nested_flattened = flatten_plan(item["superset activity"])
+                if "superset exercise" in item:
+                    nested_flattened = flatten_plan(item["superset exercise"])
                     repeats = item.get("repeat", 1)
-                    superset_rest = item.get("rest duration per set", 0)
+                    superset_rest = item.get("rest", 0)
                     
                     for r in range(repeats):
                         for sub_idx, sub_item in enumerate(nested_flattened):
                             cloned_item = dict(sub_item)
                             if sub_idx == len(nested_flattened) - 1 and superset_rest > 0:
-                                cloned_item["rest duration per set"] = sub_item.get("rest duration per set", 0) + superset_rest
+                                cloned_item["rest"] = sub_item.get("rest", 0) + superset_rest
                             flat_list.append(cloned_item)
                 else:
                     flat_list.append(dict(item))
@@ -239,8 +239,8 @@ class WorkoutApp(tk.Tk):
             return  
 
         exercise = self.engine.get_current_exercise()
-        exercise_name = exercise.get("activity", "Exercise") if exercise else ""
-        repetition = exercise.get("repetition per set", 1) if exercise else 0
+        exercise_name = exercise.get("exercise", "Exercise") if exercise else ""
+        repetition = exercise.get("reps", 1) if exercise else 0
         text_to_speak = ""
 
         if event_type == "START_WORK":
@@ -297,16 +297,16 @@ class WorkoutApp(tk.Tk):
             summary = ""
             indent = "  " * level
             for item in activities:
-                if "superset activity" in item:
+                if "superset exercise" in item:
                     repeats = item.get("repeat", 1)
-                    comp_rest = item.get("rest duration per set", 0)
+                    comp_rest = item.get("rest", 0)
                     summary += f"{indent}• [Superset] Repeat x{repeats} (Rest: {comp_rest}s):\n"
-                    summary += generate_blueprint_text(item["superset activity"], level + 1)
+                    summary += generate_blueprint_text(item["superset exercise"], level + 1)
                 else:
-                    name = item.get("activity", "Unknown")
+                    name = item.get("exercise", "Unknown")
                     sets = item.get("rounds", 1)
-                    work = item.get("work duration per set", 0)
-                    rest = item.get("rest duration per set", 0)
+                    work = item.get("work", 0)
+                    rest = item.get("rest", 0)
                     
                     is_active = (flat_counter == current_idx) and (state in ("WORK", "REST"))
                     prefix = "▶ [ACTIVE] " if is_active else "- "
@@ -628,11 +628,11 @@ class WorkoutApp(tk.Tk):
             self.progress_bar['value'] = 0 if state == WorkoutStateMachine.STATE_IDLE else 100
 
         if exercise:
-            self.lbl_exercise.configure(text=exercise.get("activity", "Unknown"))
-            reps = exercise.get("repetition per set", "--")
+            self.lbl_exercise.configure(text=exercise.get("exercise", "Unknown"))
+            reps = exercise.get("reps", "--")
             self.lbl_reps.configure(text=f"Reps per set: {reps}" if reps != "--" else "Reps per set: --")
             self.lbl_round.configure(text=f"Round: {self.engine.current_round} / {exercise.get('rounds', 1)}")
-            gif_url = exercise.get("demo gif", exercise.get("gif", None))
+            gif_url = exercise.get("demo", exercise.get("gif", None))
             if gif_url and self.loaded_gif_url != gif_url:
                 self.gif_canvas.configure(image="", text="Loading demonstration...")
                 self.after(10, lambda: self.download_and_parse_gif(gif_url))
