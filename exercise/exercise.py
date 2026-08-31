@@ -9,6 +9,9 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 from PIL import Image, ImageTk
 from datetime import datetime, timedelta
+import ssl
+
+ssl._create_default_https_context = ssl._create_unverified_context
 
 class WorkoutStateMachine:
     """Manages the states, timers, and transitions of the workout."""
@@ -241,7 +244,8 @@ class WorkoutApp(tk.Tk):
         text_to_speak = ""
 
         if event_type == "START_WORK":
-            text_to_speak = f"Do {repetition} {exercise_name} " if repetition > 1 else f"Do {exercise_name} "
+            print(repetition)
+            text_to_speak = f"{repetition} {exercise_name} " if repetition > 1 else f"Do {exercise_name} "
         elif event_type == "START_ROUND":
             text_to_speak = f"Round {self.engine.current_round}." + f"Do {repetition} {exercise_name} " if repetition > 1 else f"Do {exercise_name} "
         elif event_type == "START_REST":
@@ -522,7 +526,7 @@ class WorkoutApp(tk.Tk):
     def _async_gif_worker(self, url):
         try:
             headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'}
-            req = urllib.request.Request(url, headers=headers)
+            req = urllib.request.Request(url, headers=headers, )
             with urllib.request.urlopen(req, timeout=5) as response:
                 img_data = response.read()
             pil_img = Image.open(io.BytesIO(img_data))
