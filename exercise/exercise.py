@@ -1,6 +1,7 @@
 import os
 import glob
 import json
+import csv
 import io
 import urllib.request
 import subprocess
@@ -57,6 +58,7 @@ class WorkoutStateMachine:
         if exercise:
             self.current_state = self.STATE_REST
             self.time_remaining = exercise.get("rest", 0)
+
     def get_total_remaining_time(self):
         """Calculates dynamic total remaining time across all remaining blocks and rounds."""
         if self.current_state == self.STATE_COMPLETED:
@@ -126,12 +128,13 @@ class WorkoutStateMachine:
         else:
             self.current_state = self.STATE_COMPLETED
             return "COMPLETED"
+
 class WorkoutApp(tk.Tk):
-    """macOS optimized Tkinter Interface with Split Horizontal Layout Viewports."""
+    """macOS optimized Tkinter Interface with Dual Viewports supporting JSON and CSV."""
     def __init__(self):
         super().__init__()
         self.title("Mac Workout Tracker")
-        self.geometry("880x790")  # Expanded horizontally to support side-by-side splits comfortably
+        self.geometry("880x790")  
         self.configure(bg="#F5F5F7")  
         
         self.grid_columnconfigure(0, weight=1)
@@ -148,30 +151,39 @@ class WorkoutApp(tk.Tk):
         self.file_to_alias = {}
         self.scan_workout_files()
 
-        default_file = "workout.json"
-        self.load_workout_json(default_file if os.path.exists(default_file) else None)
+        # Fallback priority: workout.json -> workout.csv -> default fallback creation
+        default_file = "workout.json" if os.path.exists("workout.json") else ("workout.csv" if os.path.exists("workout.csv") else None)
+        self.load_workout_file(default_file)
         
         self.setup_styles()
         self.create_widgets()
         self.update_ui_display()
         self.update_preview_panel()
-
     def scan_workout_files(self):
-        """Scans the directory for files and caches their human-friendly alias names."""
+        """Scans the directory for json and csv files and caches human-friendly alias names."""
         self.alias_to_file.clear()
         self.file_to_alias.clear()
-        found_files = glob.glob("workout*.json")
         
-        if "workout.json" not in found_files and os.path.exists("workout.json"):
-            found_files.append("workout.json")
-            
+        # Discover both JSON and CSV target layouts
+        found_files = glob.glob("workout*.json") + glob.glob("workout*.csv")
+        
+        # Explicit checks for default file variants if not already caught
+        for fallback in ["workout.json", "workout.csv"]:
+            if fallback not in found_files and os.path.exists(fallback):
+                found_files.append(fallback)
+                
         for filepath in found_files:
-            try:
-                with open(filepath, "r") as f:
-                    data = json.load(f)
-                    friendly_name = data.get("alias", os.path.basename(filepath))
-            except Exception:
-                friendly_name = os.path.basename(filepath)
+            base_name = os.path.basename(filepath)
+            if filepath.endswith(".json"):
+                try:
+                    with open(filepath, "r") as f:
+                        data = json.load(f)
+                        friendly_name = data.get("alias", base_name)
+                except Exception:
+                    friendly_name = base_name
+            else:
+                # For CSV routines, hardcode the display alias strictly to its filename
+                friendly_name = base_name
                 
             unique_name = friendly_name
             counter = 1
@@ -182,28 +194,56 @@ class WorkoutApp(tk.Tk):
             self.alias_to_file[unique_name] = filepath
             self.file_to_alias[filepath] = unique_name
 
-    def load_workout_json(self, filename="workout.json"):
-        """Locates, opens, parses, and recursively flattens the chosen json workout plan."""
-        if not filename or (filename == "workout.json" and not os.path.exists(filename)):
+    def load_workout_file(self, filename=None):
+        """Dispatches loading behavior based on file extension format rules."""
+        if not filename:
+            # Generate default fallback routine if absolutely nothing exists on disk
             self.workout_data = {
                 "workout plan": [
                     {"exercise": "Pushups", "reps": 15, "work": 10, "rest": 5, "rounds": 3, "demo": "https://giphy.com"},
-                    {"exercise": "pullups", "reps": 15, "work": 10, "rest": 5, "rounds": 3, "demo": "https://giphy.com"}
+                    {"exercise": "Pullups", "reps": 15, "work": 10, "rest": 5, "rounds": 3, "demo": "https://giphy.com"}
                 ],
                 "alias": "Default General Routine"
             }
-            if filename == "workout.json":
-                with open(filename, "w") as f:
-                    json.dump(self.workout_data, f, indent=4)
-                self.scan_workout_files()
-        else:
+            with open("workout.json", "w") as f:
+                json.dump(self.workout_data, f, indent=4)
+            self.scan_workout_files()
+            filename = "workout.json"
+
+        if filename.endswith(".json"):
             try:
                 with open(filename, "r") as f:
                     self.workout_data = json.load(f)
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to parse JSON file {filename}: {e}")
                 self.workout_data = {"workout plan": [], "alias": "Error Loading Plan"}
+        elif filename.endswith(".csv"):
+            try:
+                plan_list = []
+                with open(filename, mode="r", encoding="utf-8-sig") as f:
+                    reader = csv.DictReader(f)
+                    for row in reader:
+                        # Convert data types safely to mirror JSON configuration structures
+                        exercise_entry = {
+                            "exercise": row.get("exercise", "Unknown").strip(),
+                            "reps": int(row.get("reps", 0)) if row.get("reps") else 0,
+                            "work": int(row.get("work", 0)) if row.get("work") else 0,
+                            "rest": int(row.get("rest", 0)) if row.get("rest") else 0,
+                            "rounds": int(row.get("rounds", 1)) if row.get("rounds") else 1,
+                            "demo": row.get("demo", "https://giphy.com").strip()
+                        }
+                        plan_list.append(exercise_entry)
+                
+                # Assign the raw filename directly as the baseline routine name alias
+                self.workout_data = {
+                    "workout plan": plan_list,
+                    "alias": os.path.basename(filename)
+                }
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to parse CSV file {filename}: {e}")
+                self.workout_data = {"workout plan": [], "alias": "Error Loading CSV"}
 
+        # Flatten routine components safely without modifying baseline properties
         def flatten_plan(activities):
             flat_list = []
             for item in activities:
@@ -225,6 +265,7 @@ class WorkoutApp(tk.Tk):
         raw_plan = self.workout_data.get("workout plan", [])
         self.flattened_plan_cache = flatten_plan(raw_plan)
 
+        # Your explicit baseline processing logic for original parameter values
         previous_workout = {}
         for workout in self.flattened_plan_cache:
             previous_workout.update(workout)
@@ -233,6 +274,7 @@ class WorkoutApp(tk.Tk):
         cleaned_workout_dict = dict(self.workout_data)
         cleaned_workout_dict["workout plan"] = self.flattened_plan_cache
         self.engine = WorkoutStateMachine(cleaned_workout_dict)
+
     def announce_state(self, event_type):
         """Audibly speaks instructions via macOS text-to-speech if muting is unchecked."""
         if self.var_mute_speech.get():
@@ -244,10 +286,9 @@ class WorkoutApp(tk.Tk):
         text_to_speak = ""
 
         if event_type == "START_WORK":
-            print(repetition)
             text_to_speak = f"{repetition} {exercise_name} " if repetition > 1 else f"Do {exercise_name} "
         elif event_type == "START_ROUND":
-            text_to_speak = f"Round {self.engine.current_round}." + f"Do {repetition} {exercise_name} " if repetition > 1 else f"Do {exercise_name} "
+            text_to_speak = f"Round {self.engine.current_round}. Do {repetition} {exercise_name} " if repetition > 1 else f"Do {exercise_name} "
         elif event_type == "START_REST":
             text_to_speak = "take rest"
         elif event_type == "COMPLETED":
@@ -264,10 +305,9 @@ class WorkoutApp(tk.Tk):
         selected_alias = self.cmb_plans.get()
         target_file = self.alias_to_file.get(selected_alias)
         if target_file and os.path.exists(target_file):
-            self.load_workout_json(target_file)
+            self.load_workout_file(target_file)
             self.update_ui_display()
             self.update_preview_panel()
-
     def update_preview_panel(self):
         """Generates text blueprint with real-time running exercise highlight tags."""
         self.txt_preview.configure(state="normal")
@@ -280,14 +320,6 @@ class WorkoutApp(tk.Tk):
             self.txt_preview.configure(state="disabled")
             return
             
-        try:
-            with open(target_file, "r") as f:
-                raw_data = json.load(f)
-        except Exception:
-            self.txt_preview.insert(tk.END, "Error reading sequence parameters.\n")
-            self.txt_preview.configure(state="disabled")
-            return
-
         current_idx = self.engine.current_exercise_idx
         state = self.engine.current_state
         flat_counter = 0
@@ -314,7 +346,7 @@ class WorkoutApp(tk.Tk):
                     flat_counter += 1
             return summary
 
-        raw_list = raw_data.get("workout plan", [])
+        raw_list = self.workout_data.get("workout plan", [])
         tot_dur = self.engine.total_workout_duration
         self.txt_preview.insert(tk.END, f"--- Summary ---\nActive Blocks: {len(self.flattened_plan_cache)} | Length: {tot_dur//60:02d}:{tot_dur%60:02d}\n---------------------------------\n")
         self.txt_preview.insert(tk.END, generate_blueprint_text(raw_list))
@@ -326,6 +358,7 @@ class WorkoutApp(tk.Tk):
             self.txt_preview.tag_config("active_highlight", background="#0A84FF", foreground="#FFFFFF")
             self.txt_preview.see(idx_search)
         self.txt_preview.configure(state="disabled")
+
     def trigger_countdown_audio(self, seconds_left):
         """Triggers audio cues (Hero / Submarine) on the final 3 seconds and transit points."""
         if seconds_left in (3, 2, 1):
@@ -432,7 +465,6 @@ class WorkoutApp(tk.Tk):
         self.lbl_title = tk.Label(self.header_frame, text="Workout Tracker Machine", font=("SF Pro Display", 15, "bold"), bg="#FFFFFF", fg="#1D1D1F")
         self.lbl_title.pack(side="left", padx=20, pady=12)
         
-        # Configure asymmetrical grid mapping layout (Left execution frame vs Right blueprint panel)
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
 
@@ -442,15 +474,16 @@ class WorkoutApp(tk.Tk):
         self.right_viewport_pane = tk.Frame(self, bg="#F5F5F7")
         self.right_viewport_pane.grid(row=1, column=1, sticky="nsew", padx=(10, 20), pady=15)
 
-        # Control panel controls anchored inside top deck
         self.selector_frame = tk.Frame(self.left_viewport_pane, bg="#F5F5F7")
         self.selector_frame.pack(pady=4, fill="x")
         
         tk.Label(self.selector_frame, text="Routine:", font=("SF Pro Display", 11, "bold"), bg="#F5F5F7", fg="#515154").pack(side="left", padx=2)
         sorted_aliases = sorted(list(self.alias_to_file.keys()))
-        self.cmb_plans = ttk.Combobox(self.selector_frame, values=sorted_aliases, state="readonly", width=12)
+        self.cmb_plans = ttk.Combobox(self.selector_frame, values=sorted_aliases, state="readonly", width=15)
         self.cmb_plans.pack(side="left", padx=2)
-        self.cmb_plans.set(self.file_to_alias.get("workout.json", sorted_aliases if sorted_aliases else ""))
+        
+        default_alias = self.file_to_alias.get("workout.json", self.file_to_alias.get("workout.csv", sorted_aliases[0] if sorted_aliases else ""))
+        self.cmb_plans.set(default_alias)
         self.cmb_plans.bind("<<ComboboxSelected>>", self.on_plan_selected)
         
         self.var_hide_preview = tk.BooleanVar(value=False)
@@ -459,7 +492,6 @@ class WorkoutApp(tk.Tk):
         self.var_mute_speech = tk.BooleanVar(value=False)
         ttk.Checkbutton(self.selector_frame, text="Mute Voice", variable=self.var_mute_speech, style="TCheckbutton").pack(side="left", padx=2)
         
-        # Reposition Text widget directly into right viewport pane
         self.lbl_view_title = tk.Label(self.right_viewport_pane, text="Structure Breakdown View", font=("SF Pro Display", 13, "bold"), bg="#F5F5F7", fg="#515154")
         self.lbl_view_title.pack(pady=(0, 5), anchor="w")
         
@@ -512,7 +544,8 @@ class WorkoutApp(tk.Tk):
         self.btn_skip.configure(state="disabled")
 
     def download_and_parse_gif(self, url):
-        if not url or self.loaded_gif_url == url or url == "gif url":
+        if not url or self.loaded_gif_url == url or url in ("gif url", "https://giphy.com"):
+            self.gif_canvas.configure(image="", text="Demo URL")
             return
         if self.gif_loop_id:
             self.after_cancel(self.gif_loop_id)
@@ -526,7 +559,7 @@ class WorkoutApp(tk.Tk):
     def _async_gif_worker(self, url):
         try:
             headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'}
-            req = urllib.request.Request(url, headers=headers, )
+            req = urllib.request.Request(url, headers=headers)
             with urllib.request.urlopen(req, timeout=5) as response:
                 img_data = response.read()
             pil_img = Image.open(io.BytesIO(img_data))
@@ -558,7 +591,6 @@ class WorkoutApp(tk.Tk):
         self.gif_idx = (self.gif_idx + 1) % len(self.gif_frames)
         self.gif_canvas.configure(image=self.gif_frames[self.gif_idx], text="")
         self.gif_loop_id = self.after(self.gif_frames_delay[self.gif_idx], self.animate_gif_canvas)
-
     def toggle_workout(self):
         if self.engine.current_state in (WorkoutStateMachine.STATE_IDLE, WorkoutStateMachine.STATE_COMPLETED):
             success, event = self.engine.start_workout()
