@@ -77,10 +77,9 @@ class WorkoutStateMachine:
             
             if idx == self.current_exercise_idx:
                 if self.current_state == self.STATE_WORK:
-                    total += self.time_remaining + rest
+                    total += self.time_remaining + rest + ((rounds - self.current_round) * (work + rest))
                 elif self.current_state == self.STATE_REST:
-                    total += self.time_remaining
-                total += (rounds - self.current_round) * (work + rest)
+                    total += self.time_remaining + ((rounds - self.current_round) * (work + rest))
             else:
                 total += rounds * (work + rest)
         return total
@@ -98,9 +97,14 @@ class WorkoutStateMachine:
         max_rounds = exercise.get("rounds", 1)
 
         if self.current_state == self.STATE_WORK:
+            self.transition_to_rest()
+            return "START_REST"
+        
+        elif self.current_state == self.STATE_REST:
             if self.current_round < max_rounds:
-                self.transition_to_rest()
-                return "START_REST"
+                self.current_round += 1
+                self.transition_to_work()
+                return "START_ROUND"
             else:
                 self.current_exercise_idx += 1
                 if self.current_exercise_idx < len(self.plan):
@@ -110,11 +114,6 @@ class WorkoutStateMachine:
                 else:
                     self.current_state = self.STATE_COMPLETED
                     return "COMPLETED"
-        
-        elif self.current_state == self.STATE_REST:
-            self.current_round += 1
-            self.transition_to_work()
-            return "START_ROUND"
         return None
 
     def skip_current(self):
