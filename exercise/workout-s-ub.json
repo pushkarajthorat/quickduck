@@ -3,9 +3,9 @@
   "workout plan": [
     { "exercise": "neck rotation clockwise", "reps": 1, "work": 20, "rest": 0, "rounds": 1, "demo": "https://cdn.dribbble.com/userupload/26232160/file/original-9454598afb72df3824f1f3967fae974c.gif" },
     { "exercise": "neck rotation anti clockwise" },
-    { "exercise": "neck look up and down" },
-    { "exercise": "neck side ways stretching" },
-    { "exercise": "neck touch ear to shoulder" },
+    { "exercise": "neck stretch up and down" },
+    { "exercise": "neck stretch side ways" },
+    { "exercise": "neck stretch touch ear to shoulder" },
 
     { "exercise": "Push Neck on left", "work": 15 },
     { "exercise": "Push Neck on Right" },
@@ -43,23 +43,23 @@
     { "exercise": "hip rotation clockwise" },
     { "exercise": "hip rotation anti-clockwise" },
 
-    { "exercise": "standing left leg circles clockwise", "reps": 1, "work": 20, "rest": 0, "rounds": 1 },
+    { "exercise": "standing left leg circles clockwise" },
     { "exercise": "anti clockwise" },
     { "exercise": "standing right leg circles clockwise" },
     { "exercise": "anti clockwise" },
 
-    { "exercise": "bend down hands out and swing left and right", "reps": 1, "work": 40, "rest": 0, "rounds": 1 },
+    { "exercise": "bend down hands out and swing left and right", "work": 40 },
 
-    { "exercise": "4 feet distance between legs, both hands touch to feet, elbows touch to floor, hands stretch backward, hands on hips and bend backwards", "reps": 1, "work": 40, "rest": 0, "rounds": 1 },
+    { "exercise": "4 feet distance between legs, both hands touch to feet, elbows touch to floor, hands stretch backward, hands on hips and bend backwards" },
 
-    { "exercise": "standing hamstring stretch" },
+    { "exercise": "standing hamstring stretch left leg", "work": 20 },
     { "exercise": "other leg" },
 
-    { "exercise": "right hand on hip left hand up air bend right from hips", "reps": 1, "work": 5, "rest": 0, "rounds": 1 },
-    { "exercise": "left hand on hip right hand up air bend left from hips", "reps": 1, "work": 5, "rest": 0, "rounds": 1 },
+    { "exercise": "right hand on hip left hand up air bend right from hips" },
+    { "exercise": "left hand on hip right hand up air bend left from hips" },
 
-    { "exercise": "right foot in right hand touch floor by left hand", "reps": 1, "work": 20, "rest": 0, "rounds": 1 },
-    { "exercise": "other way" },
+    { "exercise": "stand cross left leg" },
+    { "exercise": "other leg" },
 
     { "exercise": "hands on knees, join knees and rotate knees clockwise" },
     { "exercise": "other way" },
@@ -78,35 +78,41 @@
 
     { "exercise": "90 by 90 stretch" },
     
-    { "exercise": "left leg straight, right heel touching groins touch feet by hands" },
+    { "exercise": "One legged sitting forard bend" },
     { "exercise": "other leg" },
 
-    { "exercise": "legs straight, touch head to knees, hands to toes" },
+    { "exercise": "pad paschimottanasana" },
     { "exercise": "Supta Matsyendrasana - left side" },
     { "exercise": "Supta Matsyendrasana - right side" },
 
-    { "exercise": "jumping jacks", "reps": 1, "work": 40, "rest": 0, "rounds": 1, "demo": "" },
-    { "exercise": "plank shoulder tap", "reps": 1, "work": 40, "rest": 0, "rounds": 1, "demo": "" },
-    { "exercise": "regular pushups", "reps": 1, "work": 40, "rest": 0, "rounds": 1, "demo": "" },
-    { "exercise": "reverse plank", "reps": 1, "work": 40, "rest": 0, "rounds": 1, "demo": "" },
-    { "exercise": "diamond pushups", "reps": 1, "work": 40, "rest": 0, "rounds": 1, "demo": "" },
-    { "exercise": "super man hold", "reps": 1, "work": 40, "rest": 0, "rounds": 1, "demo": "" },
-    { "exercise": "reverse slow angels", "reps": 1, "work": 40, "rest": 0, "rounds": 1, "demo": "" },
-    { "exercise": "5 pushups and 5 shoulder taps", "reps": 1, "work": 40, "rest": 0, "rounds": 1, "demo": "" },
-    { "exercise": "push up rotations", "reps": 1, "work": 40, "rest": 0, "rounds": 1, "demo": "" },
-    { "exercise": "reverse plank taps", "reps": 1, "work": 40, "rest": 0, "rounds": 1, "demo": "" },
-    { "exercise": "wide pushups", "reps": 1, "work": 40, "rest": 0, "rounds": 1, "demo": "" },
-    { "exercise": "dynamic superman hold", "reps": 1, "work": 40, "rest": 0, "rounds": 1, "demo": "" },
-    { "exercise": "Plan to toe taps", "reps": 1, "work": 40, "rest": 0, "rounds": 1, "demo": "" },
-    { "exercise": "archer pushups", "reps": 1, "work": 40, "rest": 0, "rounds": 1, "demo": "" },
-    { "exercise": "Plank arm raise", "reps": 1, "work": 40, "rest": 0, "rounds": 1, "demo": "" },
-    { "exercise": "Pike pushups", "reps": 1, "work": 40, "rest": 0, "rounds": 1, "demo": "" },
-    { "exercise": "reverse slow angels", "reps": 1, "work": 40, "rest": 0, "rounds": 1, "demo": "" },
-    { "exercise": "40 seconds pushups", "reps": 1, "work": 40, "rest": 0, "rounds": 1, "demo": "" },
+    { "exercise": "Relax, starting warmup now standup, drink some water" },
     
-    { "exercise": "full body stretching", "work": 180},
+    { "exercise": "jogging at one place", "work": 60, "rest": 20 },
+    { "exercise": "jumping jacks", "work": 40 },
+    { "exercise": "high knees" },
+    
+    { "exercise": "upper body exercises", "work": 10 },
+
+    { "exercise": "plank shoulder tap" },
+    { "exercise": "regular pushups" },
+    { "exercise": "reverse plank" },
+    { "exercise": "diamond pushups" },
+    { "exercise": "super man hold" },
+    { "exercise": "reverse slow angels" },
+    { "exercise": "5 pushups and 5 shoulder taps" },
+    { "exercise": "push up rotations" },
+    { "exercise": "reverse plank taps" },
+    { "exercise": "wide pushups" },
+    { "exercise": "dynamic superman hold" },
+    { "exercise": "Plan to toe taps" },
+    { "exercise": "archer pushups" },
+    { "exercise": "Plank arm raise" },
+    { "exercise": "Pike pushups" },
+    { "exercise": "reverse slow angels" },
+    { "exercise": "40 seconds pushups" },
+    
+    { "exercise": "full body stretching and cooldown", "work": 180},
     
     { "exercise": "DONE", "reps": 0, "work": 0, "rest": 0, "rounds": 1, "demo": "https://media4.giphy.com/media/v1.Y2lkPTZjMDliOTUybXM2dHFoazUzN3Jva2l1d242NjlkM3U3dW81cWQzZjl2Z3k4MXBmYSZlcD12MV9naWZzX3NlYXJjaCZjdD1n/Z78HK8lQ2cSljuwnnm/giphy.gif" }
-
   ]
 }

@@ -1,0 +1,118 @@
+
+{
+  "workout plan": [
+    { "exercise": "neck rotation clockwise", "reps": 1, "work": 20, "rest": 0, "rounds": 1, "demo": "https://cdn.dribbble.com/userupload/26232160/file/original-9454598afb72df3824f1f3967fae974c.gif" },
+    { "exercise": "neck rotation anti clockwise" },
+    { "exercise": "neck stretch up and down" },
+    { "exercise": "neck stretch side ways" },
+    { "exercise": "neck stretch touch ear to shoulder" },
+
+    { "exercise": "Push Neck on left", "work": 15 },
+    { "exercise": "Push Neck on Right" },
+    { "exercise": "Push Neck on Front" },
+    { "exercise": "Push Neck on back" },
+
+    { "exercise": "hands out power fingers","work": 20 },
+    { "exercise": "close your fingers and wrist rotate clockwise" },
+    { "exercise": "anticlockwise" },
+    { "exercise": "fingers stretch backwards" },
+
+    { "exercise": "virtual pull arms" },
+    { "exercise": "virtual push arms" },
+
+    { "exercise": "rotate arms clockwise" },
+    { "exercise": "anti clockwise" },
+
+    { "exercise": "triceps stretch, vertically" },
+    { "exercise": "triceps stretch, horizontally" },
+    { "exercise": "Pectoral stretch left hand" },
+    { "exercise": "Pectoral stretch right hand" },
+
+    { "exercise": "chest opener swing both hands backwards" },
+    { "exercise": "chest opener swing both hands upwards" },
+
+    { "exercise": "hands out and make small circles" },
+    { "exercise": "anti clockwise" },
+
+    { "exercise": "hands out and try to fly" },
+    { "exercise": "hands out and rotate right and left from hips" },
+
+    { "exercise": "lock fingures stretch hands up wards bend to right" },
+    { "exercise": "bend to left" },
+
+    { "exercise": "hip rotation clockwise" },
+    { "exercise": "hip rotation anti-clockwise" },
+
+    { "exercise": "standing left leg circles clockwise" },
+    { "exercise": "anti clockwise" },
+    { "exercise": "standing right leg circles clockwise" },
+    { "exercise": "anti clockwise" },
+
+    { "exercise": "bend down hands out and swing left and right", "work": 40 },
+
+    { "exercise": "4 feet distance between legs, both hands touch to feet, elbows touch to floor, hands stretch backward, hands on hips and bend backwards" },
+
+    { "exercise": "standing hamstring stretch left leg", "work": 20 },
+    { "exercise": "other leg" },
+
+    { "exercise": "right hand on hip left hand up air bend right from hips" },
+    { "exercise": "left hand on hip right hand up air bend left from hips" },
+
+    { "exercise": "stand cross left leg" },
+    { "exercise": "other leg" },
+
+    { "exercise": "hands on knees, join knees and rotate knees clockwise" },
+    { "exercise": "other way" },
+
+    { "exercise": "hamstring scoop stretch - right leg" },
+    { "exercise": "hamstring scoop stretch - left leg" },
+
+    { "exercise": "rotate right toe" },
+    { "exercise": "rotate left toe" },
+    { "exercise": "left foot in hands pull upwards" },
+    { "exercise": "right foot in hands pull upwards" },
+    { "exercise": "sit down, butterfly" },
+    
+    { "exercise": "lock fingers pull left leg up like pacify baby" },
+    { "exercise": "other leg" },
+
+    { "exercise": "90 by 90 stretch" },
+    
+    { "exercise": "One legged sitting forard bend" },
+    { "exercise": "other leg" },
+
+    { "exercise": "pad paschimottanasana" },
+    { "exercise": "Supta Matsyendrasana - left side" },
+    { "exercise": "Supta Matsyendrasana - right side" },
+
+    { "exercise": "Relax, starting warmup now standup, drink some water" },
+    
+    { "exercise": "jogging at one place", "work": 60, "rest": 20 },
+    { "exercise": "jumping jacks", "work": 40 },
+    { "exercise": "high knees" },
+
+    { "exercise": "lower body", "work": 10 },
+
+    { "exercise": "squats", "reps": 15, "work": 40, "rest": 40, "rounds": 3, "demo": "https://hips.hearstapps.com/hmg-prod/images/workouts/2017/04/barbellsquat-1491916408.gif" },
+    { "exercise": "bridge", "reps": 15, "work": 40, "rest": 40, "rounds": 3, "demo": "https://www.strengthlog.com/wp-content/uploads/2025/09/glutebridge.gif" },
+    { "exercise": "alternate lunges", "reps": 15, "work": 40, "rest": 40, "rounds": 1, "demo": "https://media.tenor.com/-YiEMDDCOwoAAAAM/afundo.gif" },
+    
+    { "exercise": "sumo squats", "reps": 15, "work": 40, "rest": 40, "rounds": 3, "demo": "https://i.pinimg.com/originals/19/5b/a7/195ba798f4246ae9930a97ea2e084aae.gif" },
+    { "exercise": "right leg bridge", "reps": 15, "work": 60, "rest": 60, "rounds": 1, "demo": "https://i0.wp.com/images-prod.healthline.com/hlcmsresource/images/topic_centers/Fitness-Exercise/648x364_5_Glute_Bridge_Variations_One_Legged_Glute_Bridge.gif?w=1155&h=764" },
+    { "exercise": "left leg bridge", "reps": 15, "work": 60, "rest": 60, "rounds": 1, "demo": "https://i0.wp.com/images-prod.healthline.com/hlcmsresource/images/topic_centers/Fitness-Exercise/648x364_5_Glute_Bridge_Variations_One_Legged_Glute_Bridge.gif?w=1155&h=764" },
+
+    { "exercise": "jumping squats", "reps": 15, "work": 60, "rest": 40, "rounds": 1, "demo": "https://media.tenor.com/KTAavalOAWQAAAAM/squat-jumps.gif" },
+    { "exercise": "side lunges", "reps": 15, "work": 60, "rest": 40, "rounds": 1, "demo": "https://cdn.shopify.com/s/files/1/0449/8453/3153/files/Side_Lunges.webp?v=1732776676" },
+    { "exercise": "calf raises left", "reps": 15, "work": 60, "rest": 40, "rounds": 1, "demo": "https://i.pinimg.com/originals/b2/9c/f5/b29cf50d50e7f25493fab0ce541bb12b.gif" },
+    { "exercise": "calf raises right", "reps": 15, "work": 60, "rest": 40, "rounds": 1, "demo": "https://i.pinimg.com/originals/b2/9c/f5/b29cf50d50e7f25493fab0ce541bb12b.gif" },
+
+    { "exercise": "rest", "reps": 1, "work": 30, "rest": 30, "rounds": 1, "demo": "https://i0.wp.com/images-prod.healthline.com/hlcmsresource/images/topic_centers/Fitness-Exercise/648x364_5_Glute_Bridge_Variations_One_Legged_Glute_Bridge.gif?w=1155&h=764" },
+    
+    { "exercise": "standing wall calf stretches", "reps": 15, "work": 60, "rest": 0, "rounds": 1, "demo": "https://i.pinimg.com/originals/93/7d/d7/937dd77b8c95826c3033a14c9e60e9bc.gif" },
+    { "exercise": "hamstring scoop stretches", "reps": 15, "work": 60, "rest": 0, "rounds": 1, "demo": "https://i.makeagif.com/media/4-17-2021/XL1T-k.gif" },
+    { "exercise": "Cross Over Hamstring Stretch", "reps": 15, "work": 60, "rest": 0, "rounds": 1, "demo": "https://i.pinimg.com/originals/82/15/5c/82155c3bd7cf62cf9476d147db522474.gif" },
+    { "exercise": "Quad stretch from lunge", "reps": 15, "work": 60, "rest": 0, "rounds": 1, "demo": "https://i.pinimg.com/originals/82/15/5c/82155c3bd7cf62cf9476d147db522474.gif" },
+    
+    { "exercise": "Wall calf stretch", "demo": "https://media.post.rvohealth.io/wp-content/uploads/sites/2/2019/05/wall-calf-stretch-.gif" }
+  ]
+}
