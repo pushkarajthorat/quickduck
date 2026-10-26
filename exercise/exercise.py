@@ -1,5 +1,6 @@
 import os
 import glob
+import sys
 import json
 import csv
 import io
@@ -130,7 +131,7 @@ class WorkoutStateMachine:
             return "COMPLETED"
 
 class WorkoutApp(tk.Tk):
-    """macOS optimized Tkinter Interface with Dual Viewports supporting JSON and CSV."""
+    """macOS optimized Tkinter Interface with Anti-Flicker State Caching."""
     def __init__(self):
         super().__init__()
         self.title("Mac Workout Tracker")
@@ -147,27 +148,29 @@ class WorkoutApp(tk.Tk):
         self.loaded_gif_url = None
         self.timer_running = False
         
+        # State Change Guard Variables to prevent flickering
+        self.last_rendered_idx = -1
+        self.last_rendered_state = None
+        self.last_rendered_file = None
+        
         self.alias_to_file = {}
         self.file_to_alias = {}
         self.scan_workout_files()
 
-        # Fallback priority: workout.json -> workout.csv -> default fallback creation
         default_file = "workout.json" if os.path.exists("workout.json") else ("workout.csv" if os.path.exists("workout.csv") else None)
         self.load_workout_file(default_file)
         
         self.setup_styles()
         self.create_widgets()
         self.update_ui_display()
-        self.update_preview_panel()
+        self.update_preview_panel(force_redraw=True)
     def scan_workout_files(self):
         """Scans the directory for json and csv files and caches human-friendly alias names."""
         self.alias_to_file.clear()
         self.file_to_alias.clear()
         
-        # Discover both JSON and CSV target layouts
         found_files = glob.glob("workout*.json") + glob.glob("workout*.csv")
         
-        # Explicit checks for default file variants if not already caught
         for fallback in ["workout.json", "workout.csv"]:
             if fallback not in found_files and os.path.exists(fallback):
                 found_files.append(fallback)
@@ -182,7 +185,6 @@ class WorkoutApp(tk.Tk):
                 except Exception:
                     friendly_name = base_name
             else:
-                # For CSV routines, hardcode the display alias strictly to its filename
                 friendly_name = base_name
                 
             unique_name = friendly_name
@@ -197,7 +199,6 @@ class WorkoutApp(tk.Tk):
     def load_workout_file(self, filename=None):
         """Dispatches loading behavior based on file extension format rules."""
         if not filename:
-            # Generate default fallback routine if absolutely nothing exists on disk
             self.workout_data = {
                 "workout plan": [
                     {"exercise": "Pushups", "reps": 15, "work": 10, "rest": 5, "rounds": 3, "demo": "https://giphy.com"},
@@ -223,18 +224,17 @@ class WorkoutApp(tk.Tk):
                 with open(filename, mode="r", encoding="utf-8-sig") as f:
                     reader = csv.DictReader(f)
                     for row in reader:
-                        # Convert data types safely to mirror JSON configuration structures
-                        exercise_entry = {
-                            "exercise": row.get("exercise", "Unknown").strip(),
-                            "reps": int(row.get("reps", 0)) if row.get("reps") else 0,
-                            "work": int(row.get("work", 0)) if row.get("work") else 0,
-                            "rest": int(row.get("rest", 0)) if row.get("rest") else 0,
-                            "rounds": int(row.get("rounds", 1)) if row.get("rounds") else 1,
-                            "demo": row.get("demo", "https://giphy.com").strip()
-                        }
+                        exercise_entry = {}
+
+                        if row.get("exercise") != "": exercise_entry["exercise"] = row.get("exercise")
+                        if row.get("reps") != "": exercise_entry["reps"] = int(row.get("reps"))
+                        if row.get("work") != "": exercise_entry["work"] = int(row.get("work"))
+                        if row.get("rest") != "": exercise_entry["rest"] = int(row.get("rest"))
+                        if row.get("rounds") != "": exercise_entry["rounds"] = int(row.get("rounds"))
+                        if row.get("demo") != "": exercise_entry["demo"] = row.get("demo")
+                        
                         plan_list.append(exercise_entry)
                 
-                # Assign the raw filename directly as the baseline routine name alias
                 self.workout_data = {
                     "workout plan": plan_list,
                     "alias": os.path.basename(filename)
@@ -243,7 +243,6 @@ class WorkoutApp(tk.Tk):
                 messagebox.showerror("Error", f"Failed to parse CSV file {filename}: {e}")
                 self.workout_data = {"workout plan": [], "alias": "Error Loading CSV"}
 
-        # Flatten routine components safely without modifying baseline properties
         def flatten_plan(activities):
             flat_list = []
             for item in activities:
@@ -265,7 +264,6 @@ class WorkoutApp(tk.Tk):
         raw_plan = self.workout_data.get("workout plan", [])
         self.flattened_plan_cache = flatten_plan(raw_plan)
 
-        # Your explicit baseline processing logic for original parameter values
         previous_workout = {}
         for workout in self.flattened_plan_cache:
             previous_workout.update(workout)
@@ -307,21 +305,35 @@ class WorkoutApp(tk.Tk):
         if target_file and os.path.exists(target_file):
             self.load_workout_file(target_file)
             self.update_ui_display()
-            self.update_preview_panel()
-    def update_preview_panel(self):
-        """Generates text blueprint with real-time running exercise highlight tags."""
+            self.update_preview_panel(force_redraw=True)
+    def update_preview_panel(self, force_redraw=False):
+        """Generates text blueprint only when structural changes or state loops transition."""
+        selected_alias = self.cmb_plans.get()
+        target_file = self.alias_to_file.get(selected_alias)
+        
+        current_idx = self.engine.current_exercise_idx
+        state = self.engine.current_state
+
+        # Anti-Flicker Guard Check: Bypass massive redraws if engine properties are unchanged
+        if not force_redraw:
+            if (self.last_rendered_idx == current_idx and 
+                self.last_rendered_state == state and 
+                self.last_rendered_file == target_file):
+                return
+
+        # Update historical cache bounds
+        self.last_rendered_idx = current_idx
+        self.last_rendered_state = state
+        self.last_rendered_file = target_file
+
         self.txt_preview.configure(state="normal")
         self.txt_preview.delete("1.0", tk.END)
         
-        selected_alias = self.cmb_plans.get()
-        target_file = self.alias_to_file.get(selected_alias)
         if not target_file or not os.path.exists(target_file):
             self.txt_preview.insert(tk.END, "No routine structure details found.\n")
             self.txt_preview.configure(state="disabled")
             return
-            
-        current_idx = self.engine.current_exercise_idx
-        state = self.engine.current_state
+
         flat_counter = 0
 
         def generate_blueprint_text(activities, level=0):
@@ -479,10 +491,10 @@ class WorkoutApp(tk.Tk):
         
         tk.Label(self.selector_frame, text="Routine:", font=("SF Pro Display", 11, "bold"), bg="#F5F5F7", fg="#515154").pack(side="left", padx=2)
         sorted_aliases = sorted(list(self.alias_to_file.keys()))
-        self.cmb_plans = ttk.Combobox(self.selector_frame, values=sorted_aliases, state="readonly", width=15)
+        self.cmb_plans = ttk.Combobox(self.selector_frame, values=sorted_aliases, state="readonly", width=25)
         self.cmb_plans.pack(side="left", padx=2)
         
-        default_alias = self.file_to_alias.get("workout.json", self.file_to_alias.get("workout.csv", sorted_aliases[0] if sorted_aliases else ""))
+        default_alias = self.file_to_alias.get("workout.json", self.file_to_alias.get("workout.csv", sorted_aliases if sorted_aliases else ""))
         self.cmb_plans.set(default_alias)
         self.cmb_plans.bind("<<ComboboxSelected>>", self.on_plan_selected)
         
@@ -545,7 +557,8 @@ class WorkoutApp(tk.Tk):
 
     def download_and_parse_gif(self, url):
         if not url or self.loaded_gif_url == url or url in ("gif url", "https://giphy.com"):
-            self.gif_canvas.configure(image="", text="Demo URL")
+            self.loaded_gif_url = url  # Secure cache match to prevent loop re-entry
+            self.gif_canvas.configure(image="", text="Demo URL Placeholder")
             return
         if self.gif_loop_id:
             self.after_cancel(self.gif_loop_id)
@@ -614,7 +627,7 @@ class WorkoutApp(tk.Tk):
         if event:
             self.announce_state(event)
         self.update_ui_display()
-        self.update_preview_panel()
+        self.update_preview_panel(force_redraw=True)
 
     def run_loop(self):
         if not self.timer_running:
@@ -622,9 +635,14 @@ class WorkoutApp(tk.Tk):
         self.trigger_countdown_audio(self.engine.time_remaining)
         transition_event = self.engine.tick()
         self.update_ui_display()
+        
+        # Standard timer tick updates bypass heavy text refreshes unless an active state rolls over
         if transition_event:
             self.announce_state(transition_event)
-            self.update_preview_panel()  
+            self.update_preview_panel(force_redraw=True)  
+        else:
+            self.update_preview_panel(force_redraw=False)
+
         if self.engine.current_state == WorkoutStateMachine.STATE_COMPLETED:
             self.timer_running = False
             self.trigger_countdown_audio(0)  
@@ -636,7 +654,7 @@ class WorkoutApp(tk.Tk):
             self.btn_skip.configure(state="disabled")
             self.cmb_plans.configure(state="readonly")  
             self.progress_bar['value'] = 100
-            self.update_preview_panel()
+            self.update_preview_panel(force_redraw=True)
             self.render_github_heatmap() 
             messagebox.showinfo("Done!", "Awesome job! You finished the entire workout plan.")
             return
