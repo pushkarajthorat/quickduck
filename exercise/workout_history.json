@@ -58,5 +58,11 @@
             "alias": "workout-full-body-stretching.csv",
             "time": "09:41:58 AM"
         }
+    ],
+    "2026-10-26": [
+        {
+            "alias": "workout-lower-body-workout-min-warmup.csv",
+            "time": "09:36:05 AM"
+        }
     ]
 }

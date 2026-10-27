@@ -97,9 +97,25 @@ class WorkoutStateMachine:
         max_rounds = exercise.get("rounds", 1)
 
         if self.current_state == self.STATE_WORK:
-            self.transition_to_rest()
-            return "START_REST"
-        
+            # If rest is 0, skip the REST state completely
+            if exercise.get("rest", 0) == 0:
+                if self.current_round < max_rounds:
+                    self.current_round += 1
+                    self.transition_to_work()
+                    return "START_ROUND"
+                else:
+                    self.current_exercise_idx += 1
+                    if self.current_exercise_idx < len(self.plan):
+                        self.current_round = 1
+                        self.transition_to_work()
+                        return "START_WORK"
+                    else:
+                        self.current_state = self.STATE_COMPLETED
+                        return "COMPLETED"
+            else:
+                self.transition_to_rest()
+                return "START_REST"
+       
         elif self.current_state == self.STATE_REST:
             if self.current_round < max_rounds:
                 self.current_round += 1
@@ -506,7 +522,7 @@ class WorkoutApp(tk.Tk):
         self.lbl_view_title = tk.Label(self.right_viewport_pane, text="Structure Breakdown View", font=("SF Pro Display", 13, "bold"), bg="#F5F5F7", fg="#515154")
         self.lbl_view_title.pack(pady=(0, 5), anchor="w")
         
-        self.txt_preview = tk.Text(self.right_viewport_pane, width=38, bg="#FFFFFF", fg="#1D1D1F", font=("Courier", 11), relief="sunken", borderwidth=1)
+        self.txt_preview = tk.Text(self.right_viewport_pane, width=38, bg="#FFFFFF", fg="#1D1D1F", font=("MesloLGS NF", 15), relief="sunken", borderwidth=1)
         self.txt_preview.pack(fill="both", expand=True)
         
         self.lbl_exercise = tk.Label(self.left_viewport_pane, text="Ready to Start", font=("SF Pro Display", 22, "bold"), bg="#F5F5F7", fg="#1D1D1F")
