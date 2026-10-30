@@ -132,6 +132,14 @@ class WorkoutStateMachine:
                     return "COMPLETED"
         return None
 
+    def skip_current_round(self):
+        """Skips the remaining time of the current round or rest block."""
+        if self.current_state in (self.STATE_IDLE, self.STATE_COMPLETED):
+            return None
+        self.time_remaining = 0
+        return self.tick()
+
+
     def skip_current(self):
         """Skips the entire remaining sets of the current exercise."""
         if self.current_state in (self.STATE_IDLE, self.STATE_COMPLETED):
@@ -567,8 +575,13 @@ class WorkoutApp(tk.Tk):
         self.btn_action.pack(side="left", padx=20, pady=12)
 
         self.btn_skip = ttk.Button(self.control_frame, text="Skip Exercise", style="TButton", command=self.skip_exercise)
+        
         self.btn_skip.pack(side="right", padx=20, pady=12)
         self.btn_skip.configure(state="disabled")
+
+        self.btn_skip_round = ttk.Button(self.control_frame, text="Skip Round", style="TButton", command=self.skip_round)
+        self.btn_skip_round.pack(side="right", padx=10, pady=12)
+        self.btn_skip_round.configure(state="disabled")
 
     def download_and_parse_gif(self, url):
         if not url or self.loaded_gif_url == url or url in ("gif url", "https://giphy.com"):
@@ -625,6 +638,7 @@ class WorkoutApp(tk.Tk):
             if success:
                 self.timer_running = True
                 self.btn_skip.configure(state="normal")
+                self.btn_skip_round.configure(state="normal")
                 self.cmb_plans.configure(state="disabled")  
                 if event:
                     self.announce_state(event)
@@ -636,6 +650,13 @@ class WorkoutApp(tk.Tk):
             self.timer_running = True
             self.btn_action.configure(text="Pause")
             self.run_loop()
+
+    def skip_round(self):
+        event = self.engine.skip_current_round()
+        if event:
+            self.announce_state(event)
+            self.update_ui_display()
+            self.update_preview_panel(force_redraw=True)
 
     def skip_exercise(self):
         event = self.engine.skip_current()
@@ -667,6 +688,7 @@ class WorkoutApp(tk.Tk):
             self.gif_canvas.configure(image="", text="Finished!")
             self.btn_action.configure(text="Restart", style="Action.TButton")
             self.btn_skip.configure(state="disabled")
+            self.btn_skip_round.configure(state="disabled")
             self.cmb_plans.configure(state="readonly")  
             self.progress_bar['value'] = 100
             self.update_preview_panel(force_redraw=True)
