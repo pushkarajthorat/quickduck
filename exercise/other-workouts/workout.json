@@ -1,0 +1,31 @@
+
+{
+    "alias": "dummy workout",
+    "workout plan": [
+        {"exercise": "Pushups", "reps": 15, "work": 10, "rest": 5, "rounds": 3, "demo": "https://cdn.dribbble.com/userupload/26232160/file/original-9454598afb72df3824f1f3967fae974c.gif"},
+        {"exercise": "pullups", "reps": 15, "work": 10, "rest": 5, "rounds": 3, "demo": "https://cdn.dribbble.com/userupload/26232160/file/original-9454598afb72df3824f1f3967fae974c.gif"},
+        {
+            "superset exercise":[
+                {"exercise": "jumping jacks", "reps": 15, "work": 10, "rest": 5, "rounds": 3, "demo": "https://cdn.dribbble.com/userupload/26232160/file/original-9454598afb72df3824f1f3967fae974c.gif"},
+                {"exercise": "tuck jumps", "reps": 15, "work": 10, "rest": 5, "rounds": 3, "demo": "https://cdn.dribbble.com/userupload/26232160/file/original-9454598afb72df3824f1f3967fae974c.gif"}
+            ],
+            "repeat": 3,
+            "rest": 5
+        },
+        {
+            "superset exercise":[
+                {
+                    "superset exercise":[
+                        {"exercise": "high knees", "reps": 15, "work": 10, "rest": 5, "rounds": 3, "demo": "https://cdn.dribbble.com/userupload/26232160/file/original-9454598afb72df3824f1f3967fae974c.gif"},
+                        {"exercise": "broad jumps", "reps": 15, "work": 10, "rest": 5, "rounds": 3, "demo": "https://cdn.dribbble.com/userupload/26232160/file/original-9454598afb72df3824f1f3967fae974c.gif"}
+                    ],
+                    "repeat": 3,
+                    "rest": 5
+                },
+                {"exercise": "single leg bound", "reps": 15, "work": 10, "rest": 5, "rounds": 3, "demo": "https://cdn.dribbble.com/userupload/26232160/file/original-9454598afb72df3824f1f3967fae974c.gif"} 
+            ],
+            "repeat": 3,
+            "rest": 5
+        }
+    ]
+}
